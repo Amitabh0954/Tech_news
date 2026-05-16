@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: engintel
+      POSTGRES_USER: engintel
+      POSTGRES_PASSWORD: engintel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docs/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      APP_NAME: Engineering Intelligence API
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://engintel:engintel@postgres:5432/engintel
+      CORS_ORIGINS: '["http://localhost:5173"]'
+      DEFAULT_LLM_PROVIDER: gemma
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

@@ -75,14 +75,10 @@ function IconCode({ size, stroke }: { size?: number; stroke?: number }) {
 }
 
 export function getArticleSection(article: Article) {
-  return article.section ?? article.category?.slug ?? "oss";
+  return article.category?.slug ?? "oss";
 }
 
 export function getArticleSourceUrl(article: Article) {
-  if (article.sourceUrl?.trim()) {
-    return article.sourceUrl;
-  }
-
   if (article.source.homepage_url?.trim()) {
     return article.source.homepage_url;
   }
@@ -95,10 +91,6 @@ export function getArticleSourceUrl(article: Article) {
 }
 
 export function getArticleSourceName(article: Article) {
-  if (article.sourceName?.trim()) {
-    return article.sourceName;
-  }
-
   const sourceUrl = getArticleSourceUrl(article);
 
   try {

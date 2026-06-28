@@ -24,6 +24,16 @@ export function useCriticalStories() {
   });
 }
 
+export function useFeedStatus() {
+  return useQuery({
+    queryKey: ["feed-status"],
+    queryFn: async () => ({
+      activeAlerts: 0,
+      lastFetched: new Date().toISOString(),
+    }),
+  });
+}
+
 export function useTrendingTopics() {
   return useQuery({
     queryKey: ["trending-topics"],

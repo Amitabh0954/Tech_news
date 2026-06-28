@@ -1,0 +1,14 @@
+{
+  "name": "engintel-rss-server",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "server": "node server/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "node-fetch": "^2.7.0",
+    "rss-parser": "^3.13.0"
+  }
+}

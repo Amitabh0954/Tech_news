@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { ArchitecturePage } from "@/features/architecture/architecture-page";
 import { ArticleRoute } from "@/routes/article-route";
 import { BookmarksRoute } from "@/routes/bookmarks-route";
 import { CriticalRoute } from "@/routes/critical-route";
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
       { path: "search", element: <SearchRoute /> },
       { path: "bookmarks", element: <BookmarksRoute /> },
       { path: "login", element: <LoginRoute /> },
+      { path: "architecture", element: <ArchitecturePage /> },
     ],
   },
 ]);

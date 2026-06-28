@@ -1,6 +1,18 @@
 from fastapi import APIRouter
 
-from app.api.routes import auth, bookmarks, categories, critical, ingestion, news, search, sources, summaries, trending
+from app.api.routes import (
+    architecture,
+    auth,
+    bookmarks,
+    categories,
+    critical,
+    ingestion,
+    news,
+    search,
+    sources,
+    summaries,
+    trending,
+)
 
 
 api_router = APIRouter()
@@ -14,3 +26,4 @@ api_router.include_router(bookmarks.router, tags=["bookmarks"])
 api_router.include_router(sources.router, tags=["sources"])
 api_router.include_router(summaries.router, tags=["summaries"])
 api_router.include_router(ingestion.router, tags=["ingestion"])
+api_router.include_router(architecture.router, tags=["architecture"])

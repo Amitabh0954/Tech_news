@@ -1,9 +1,21 @@
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { StickySidebar } from "@/components/layout/sticky-sidebar";
 import { TopHeader } from "@/components/layout/top-header";
+import { useAuthStore } from "@/stores/auth-store";
 
 export function AppShell() {
+  const location = useLocation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  if (!isAuthenticated && location.pathname !== "/login") {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (isAuthenticated && location.pathname === "/login") {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-background text-zinc-900 dark:text-slate-100">
       <TopHeader />

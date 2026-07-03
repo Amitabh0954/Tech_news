@@ -6,7 +6,6 @@ import { ArticleRoute } from "@/routes/article-route";
 import { BookmarksRoute } from "@/routes/bookmarks-route";
 import { CriticalRoute } from "@/routes/critical-route";
 import { HomeRoute } from "@/routes/home-route";
-import { LoginRoute } from "@/routes/login-route";
 import { SearchRoute } from "@/routes/search-route";
 
 export const router = createBrowserRouter([
@@ -19,7 +18,6 @@ export const router = createBrowserRouter([
       { path: "critical", element: <CriticalRoute /> },
       { path: "search", element: <SearchRoute /> },
       { path: "bookmarks", element: <BookmarksRoute /> },
-      { path: "login", element: <LoginRoute /> },
       { path: "architecture", element: <ArchitecturePage /> },
     ],
   },

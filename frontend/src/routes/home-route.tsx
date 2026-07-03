@@ -19,13 +19,13 @@ export function HomeRoute() {
   return (
     <div className="space-y-8">
       <section className="border-b border-border pb-6 dark:border-white/10">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Daily report</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Daily intelligence brief</div>
         <h1 className="mt-3 max-w-4xl font-heading text-4xl font-semibold leading-[1.05] tracking-[-0.07em] text-zinc-900 dark:text-white sm:text-5xl">
-          What serious software engineers must know today
+          Executive insight for the modern engineering leader
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-8 text-zinc-700 dark:text-slate-300">
-          High-signal reporting on AI breakthroughs, ecosystem risk, security incidents, cloud changes, supply-chain
-          events, and developer tooling shifts.
+          High-signal coverage of AI advances, security incidents, cloud platform changes, supply-chain risk, and the
+          tooling shifts shaping engineering execution.
         </p>
       </section>
 

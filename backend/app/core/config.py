@@ -53,14 +53,24 @@ class Settings(BaseSettings):
     ]
     reddit_story_limit_per_feed: int = 2
     rss_feed_urls: list[str] = [
+        "https://techcrunch.com/feed/",
+        "https://feeds.arstechnica.com/arstechnica/index",
+        "https://www.theverge.com/rss/index.xml",
+        "https://www.engadget.com/rss.xml",
+        "https://venturebeat.com/feed/",
+        "https://www.wired.com/feed/rss",
+        "https://hnrss.org/frontpage",
+        "https://github.blog/feed/",
+        "https://developers.googleblog.com/feeds/posts/default",
+        "https://aws.amazon.com/blogs/aws/feed/",
+        "https://devblogs.microsoft.com/feed/",
         "https://openai.com/news/rss.xml",
+        "https://blog.cloudflare.com/rss/",
+        "https://blogs.nvidia.com/feed/",
         "https://www.anthropic.com/news/rss.xml",
         "https://simonwillison.net/atom/everything/",
         "https://huggingface.co/blog/feed.xml",
         "https://www.latent.space/feed",
-        "https://blog.cloudflare.com/rss/",
-        "https://aws.amazon.com/new/feed/",
-        "https://aws.amazon.com/blogs/aws/feed/",
         "https://netflixtechblog.com/feed",
         "https://www.uber.com/blog/engineering/rss/",
         "https://vercel.com/atom",
@@ -72,13 +82,6 @@ class Settings(BaseSettings):
         "https://snyk.io/blog/feed/",
         "https://feeds.feedburner.com/TheHackersNews",
         "https://kubernetes.io/feed.xml",
-        "https://www.youtube.com/feeds/videos.xml?channel_id=UCsBjURrPoezykLs9EqgamOA",
-        "https://www.youtube.com/feeds/videos.xml?channel_id=UCbRP3c757lWg9M-U7TyEkXA",
-        "https://www.youtube.com/feeds/videos.xml?channel_id=UC8ENHE5xdFSwx71u3fDH5Xw",
-        "https://www.youtube.com/feeds/videos.xml?channel_id=UCXgGY0wkgOzynnHvSEVmE3A",
-        "https://www.youtube.com/feeds/videos.xml?channel_id=UC8butISFwT-Wl7EV0hUK0BQ",
-        "https://www.youtube.com/feeds/videos.xml?channel_id=UCeVMnSShP_Iviwkknt83cww",
-        "https://www.youtube.com/feeds/videos.xml?channel_id=UCiEHVhv0SBMpP75JbzJShqw",
     ]
     rss_story_limit_per_feed: int = 8
     hacker_news_base_url: str = "https://hacker-news.firebaseio.com/v0"

@@ -14,7 +14,7 @@ from app.schemas.news import (
     SummaryRead,
 )
 from app.core.config import settings
-from app.services.images import generate_story_image_data_uri
+from app.services.images import generate_story_image_data_uri, select_local_story_image
 from app.services.ingestion.orchestrator import IngestionOrchestrator
 from app.services.ingestion.providers import GitHubProvider, HackerNewsProvider, RSSProvider, RedditProvider
 from app.services.ranking import EngineeringSignalRanker
@@ -216,6 +216,17 @@ class LiveNewsService:
             story_id = uuid5(NAMESPACE, f"story-{item.get('source_slug')}-{item.get('external_id')}")
             published_at = item.get("published_at") or datetime.now(UTC)
 
+            selected_image = item.get("image_url")
+            if not selected_image:
+                selected_image = select_local_story_image(
+                    title=title,
+                    excerpt=excerpt,
+                    source_name=source.name,
+                    category_name=category.name,
+                )
+            if not selected_image:
+                selected_image = generate_story_image_data_uri(title=title, label=category.name)
+
             articles.append(
                 ArticleDetail(
                     id=story_id,
@@ -223,8 +234,7 @@ class LiveNewsService:
                     slug=slugify(title)[:240],
                     canonical_url=canonical_url,
                     excerpt=excerpt[:500],
-                    image_url=item.get("image_url")
-                    or generate_story_image_data_uri(title=title, label=category.name),
+                    image_url=selected_image,
                     urgency=ranked.urgency,
                     impact_score=max(ranked.impact_score, ranked.relevance_score),
                     published_at=published_at,

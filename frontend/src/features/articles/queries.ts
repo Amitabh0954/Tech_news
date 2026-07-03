@@ -7,6 +7,9 @@ export function useNewsFeed(category?: string | null) {
     queryKey: ["news-feed", category],
     queryFn: ({ pageParam }) => api.getNews(pageParam as number, 8, category),
     initialPageParam: 1,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
     getNextPageParam: (lastPage) => {
       if (!lastPage.next_cursor) {
         return undefined;
@@ -21,6 +24,9 @@ export function useCriticalStories() {
   return useQuery({
     queryKey: ["critical-stories"],
     queryFn: api.getCritical,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -38,6 +44,9 @@ export function useTrendingTopics() {
   return useQuery({
     queryKey: ["trending-topics"],
     queryFn: api.getTrending,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -46,6 +55,9 @@ export function useArticle(slug: string) {
     queryKey: ["article", slug],
     queryFn: () => api.getArticle(slug),
     enabled: Boolean(slug),
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -54,5 +66,8 @@ export function useSearchNews(query: string) {
     queryKey: ["search-news", query],
     queryFn: () => api.searchNews(query),
     enabled: query.trim().length > 1,
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
   });
 }

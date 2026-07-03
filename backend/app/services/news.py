@@ -5,9 +5,26 @@ from app.schemas.news import PaginatedArticles
 
 
 class NewsService:
+    CACHE_TTL_MINUTES = 30
+
     def __init__(self, repository: NewsRepository) -> None:
         self.repository = repository
         self.live_news = LiveNewsService()
+
+    async def _refresh_cache(self) -> None:
+        live = await self.live_news.collect_articles()
+        if live:
+            await self.repository.upsert_articles(live)
+
+    async def refresh_cache(self) -> None:
+        await self._refresh_cache()
+
+    async def _should_refresh_cache(self, *, page: int, query: str | None = None) -> bool:
+        if query:
+            return False
+        if page != 1:
+            return False
+        return await self.repository.is_cache_stale(self.CACHE_TTL_MINUTES)
 
     def _demo_feed(
         self,
@@ -48,6 +65,9 @@ class NewsService:
     ) -> PaginatedArticles:
         offset = (page - 1) * page_size
         try:
+            if await self._should_refresh_cache(page=page, query=query):
+                await self._refresh_cache()
+
             rows, total = await self.repository.list_articles(
                 category=category,
                 urgency=urgency,
@@ -56,6 +76,18 @@ class NewsService:
                 offset=offset,
             )
             if not rows:
+                await self._refresh_cache()
+                rows, total = await self.repository.list_articles(
+                    category=category,
+                    urgency=urgency,
+                    query=query,
+                    limit=page_size,
+                    offset=offset,
+                )
+                if rows:
+                    next_cursor = str(page + 1) if offset + page_size < total else None
+                    return PaginatedArticles(items=list(rows), total=total, next_cursor=next_cursor)
+
                 live = await self.live_news.paginated_feed(
                     category=category,
                     urgency=urgency,
@@ -63,7 +95,10 @@ class NewsService:
                     page=page,
                     page_size=page_size,
                 )
-                return live if live.items else self._demo_feed(
+                if live.items:
+                    await self.repository.upsert_articles(live.items)
+                    return live
+                return self._demo_feed(
                     category=category,
                     urgency=urgency,
                     query=query,
@@ -93,6 +128,11 @@ class NewsService:
             article = await self.repository.get_by_slug(slug)
             if article:
                 return article
+            await self._refresh_cache()
+            article = await self.repository.get_by_slug(slug)
+            if article:
+                return article
+
             live = await self.live_news.collect_articles()
             current = next((item for item in live if item.slug == slug), None)
             if current:
@@ -111,10 +151,15 @@ class NewsService:
 
     async def list_critical(self):
         try:
+            if await self.repository.is_cache_stale(self.CACHE_TTL_MINUTES):
+                await self._refresh_cache()
+
             rows = await self.repository.list_critical()
             if rows:
                 return rows
             live = await self.live_news.paginated_feed(urgency="critical", page_size=10)
+            if live.items:
+                await self.repository.upsert_articles(live.items)
             return live.items or [article for article in get_demo_feed().items if article.urgency == "critical"]
         except Exception:
             live = await self.live_news.paginated_feed(urgency="critical", page_size=10)

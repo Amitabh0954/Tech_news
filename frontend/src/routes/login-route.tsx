@@ -1,128 +1,138 @@
 import { FormEvent, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
+import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function LoginRoute() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const registeredUser = useAuthStore((state) => state.registeredUser);
-  const registerAndLogin = useAuthStore((state) => state.registerAndLogin);
-  const login = useAuthStore((state) => state.login);
-
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const isNewUser = !registeredUser;
-  const heading = isNewUser ? "Create your access password." : "Sign in with your saved account.";
-  const helperText = isNewUser
-    ? "This looks like the first visit on this browser. Enter your email and choose a password to unlock the app."
-    : "Use the email and password that were saved the first time this browser was set up.";
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setError("");
+    setError(null);
+    setLoading(true);
 
-    const trimmedEmail = email.trim();
+    try {
+      const authResponse =
+        mode === "signup"
+          ? await api.auth.register(email, password, displayName || email.split("@")[0])
+          : await api.auth.login(email, password);
 
-    if (!trimmedEmail || !password) {
-      setError("Enter both email and password.");
-      return;
+      setAuth(authResponse.user, authResponse.access_token);
+      navigate("/app");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Authentication failed");
+    } finally {
+      setLoading(false);
     }
-
-    if (isNewUser) {
-      registerAndLogin({ email: trimmedEmail, password });
-      navigate((location.state as { from?: string } | null)?.from ?? "/", { replace: true });
-      return;
-    }
-
-    const result = login({ email: trimmedEmail, password });
-
-    if (!result.success) {
-      setError(result.error);
-      return;
-    }
-
-    navigate((location.state as { from?: string } | null)?.from ?? "/", { replace: true });
-  }
+  };
 
   return (
-    <section className="mx-auto grid min-h-[calc(100vh-10rem)] max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-      <div className="border border-border bg-panel p-8 dark:border-white/10">
-        <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">Authentication</div>
-        <h1 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.05em] text-zinc-900 dark:text-white">
-          {heading}
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-700 dark:text-slate-300">{helperText}</p>
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-16 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div className="space-y-6">
+            <div className="inline-flex items-center rounded-full border border-slate-800 bg-slate-900/80 px-3 py-1 text-sm text-slate-300">
+              Tech news • AI signals • fast context
+            </div>
+            <div className="space-y-4">
+              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+                See the stories shaping engineering before the noise catches up.
+              </h1>
+              <p className="max-w-2xl text-lg text-slate-400">
+                Follow the signal across product launches, security incidents, infrastructure shifts, and developer tools.
+              </p>
+            </div>
+          </div>
 
-        <div className="mt-8 grid gap-4 border-t border-border pt-6 dark:border-white/10 sm:grid-cols-3">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-slate-500">
-              Email
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Access portal</p>
+                <h2 className="text-xl font-semibold text-white">{mode === "signup" ? "Create account" : "Sign in"}</h2>
+              </div>
+              <div className="rounded-full border border-slate-800 bg-slate-950/70 px-3 py-1 text-sm text-slate-400">
+                {mode === "signup" ? "New here" : "Returning"}
+              </div>
             </div>
-            <p className="mt-2 text-sm text-zinc-700 dark:text-slate-300">Used as the saved login identity.</p>
-          </div>
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-slate-500">
-              Password
+
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {mode === "signup" ? (
+                <div>
+                  <label className="mb-2 block text-sm text-slate-400" htmlFor="displayName">
+                    Display name
+                  </label>
+                  <input
+                    id="displayName"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none ring-0"
+                    placeholder="Alex Chen"
+                    value={displayName}
+                    onChange={(event) => setDisplayName(event.target.value)}
+                  />
+                </div>
+              ) : null}
+
+              <div>
+                <label className="mb-2 block text-sm text-slate-400" htmlFor="email">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none ring-0"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-slate-400" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none ring-0"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </div>
+
+              {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-sky-500 px-4 py-3 font-medium text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={loading}
+              >
+                {loading ? "Working..." : mode === "signup" ? "Create account" : "Sign in"}
+              </button>
+            </form>
+
+            <div className="mt-6 flex items-center justify-between text-sm text-slate-400">
+              <span>{mode === "signup" ? "Already have an account?" : "Need an account?"}</span>
+              <button
+                type="button"
+                className="font-medium text-slate-200 transition hover:text-white"
+                onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+              >
+                {mode === "signup" ? "Sign in" : "Create account"}
+              </button>
             </div>
-            <p className="mt-2 text-sm text-zinc-700 dark:text-slate-300">
-              {isNewUser ? "Set it now on first visit." : "Enter the password already defined earlier."}
-            </p>
-          </div>
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-slate-500">
-              Storage
-            </div>
-            <p className="mt-2 text-sm text-zinc-700 dark:text-slate-300">Saved locally in this browser for now.</p>
           </div>
         </div>
       </div>
-
-      <form onSubmit={handleSubmit} className="border border-border bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-950">
-        <div className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">
-          {isNewUser ? "First-time setup" : "Welcome back"}
-        </div>
-        <div className="mt-6 space-y-5">
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-zinc-800 dark:text-slate-200">Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              className="w-full border border-border bg-transparent px-4 py-3 text-sm outline-none transition focus:border-zinc-900 dark:border-white/10 dark:text-white dark:focus:border-white"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-zinc-800 dark:text-slate-200">Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder={isNewUser ? "Choose a password" : "Enter your password"}
-              className="w-full border border-border bg-transparent px-4 py-3 text-sm outline-none transition focus:border-zinc-900 dark:border-white/10 dark:text-white dark:focus:border-white"
-            />
-          </label>
-        </div>
-
-        {error ? <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p> : null}
-
-        <button
-          type="submit"
-          className="mt-6 inline-flex w-full items-center justify-center bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-slate-200"
-        >
-          {isNewUser ? "Create Account" : "Log In"}
-        </button>
-
-        <p className="mt-4 text-xs leading-6 text-zinc-500 dark:text-slate-500">
-          {isNewUser
-            ? "After the first setup, this browser will treat you as an existing user and require the same saved password."
-            : `Saved account: ${registeredUser?.email ?? ""}`}
-        </p>
-      </form>
-    </section>
+    </div>
   );
 }

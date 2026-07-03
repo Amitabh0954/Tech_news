@@ -3,18 +3,18 @@ import { Link, NavLink } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navItems = [
-  { to: "/", label: "Top Stories" },
-  { to: "/critical", label: "Security" },
-  { to: "/search", label: "AI & Agents" },
-  { to: "/bookmarks", label: "Cloud" },
-  { to: "/architecture", label: "Architecture" },
+  { to: "/app", label: "Top Stories" },
+  { to: "/app/critical", label: "Security" },
+  { to: "/app/search", label: "AI & Agents" },
+  { to: "/app/bookmarks", label: "Cloud" },
+  { to: "/app/architecture", label: "Architecture" },
 ];
 
 export function TopHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-8">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/app" className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-full border border-accent/25 bg-white/70 text-accent shadow-sm dark:bg-zinc-900/70">
             <div className="h-5 w-5 rounded-full border-4 border-dotted border-accent" />
           </div>

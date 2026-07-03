@@ -9,7 +9,7 @@ export function StoryRow({ article }: { article: Article }) {
       <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">
         {article.category?.name ?? "Engineering"}
       </div>
-      <Link to={`/article/${article.slug}`} className="block">
+      <Link to={`/app/article/${article.slug}`} className="block">
         <div className="mb-3 flex items-center gap-3">
           <ImpactBadge score={article.impact_score} urgency={article.urgency} />
           <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">

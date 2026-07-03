@@ -17,7 +17,7 @@ export function BookmarksRoute() {
           savedSlugs.map((slug) => (
             <Link
               key={slug}
-              to={`/article/${slug}`}
+              to={`/app/article/${slug}`}
               className="block border border-border bg-background/40 px-4 py-3 text-sm text-zinc-800 dark:border-white/10 dark:text-slate-200"
             >
               {slug}

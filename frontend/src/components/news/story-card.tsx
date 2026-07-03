@@ -8,7 +8,7 @@ import { TagPill } from "@/components/ui/tag-pill";
 export function StoryCard({ article }: { article: Article }) {
   return (
     <article className="border border-border bg-panel p-5 transition-colors hover:border-accent/30 dark:border-white/10">
-      <Link to={`/article/${article.slug}`} className="block">
+      <Link to={`/app/article/${article.slug}`} className="block">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <ImpactBadge score={article.impact_score} urgency={article.urgency} />

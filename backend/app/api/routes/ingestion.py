@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from app.api.deps import get_news_service
 from app.schemas.ingestion import IngestedStory
+from app.services.news import NewsService
 from app.services.ingestion.providers import HackerNewsProvider
 
 
@@ -14,3 +16,15 @@ async def preview_hacker_news(
     provider = HackerNewsProvider(story_limit=limit)
     items = await provider.fetch_items()
     return [IngestedStory(**item) for item in items]
+
+
+@router.post("/refresh")
+async def refresh_news_cache(
+    service: NewsService = Depends(get_news_service),
+) -> dict[str, int | str]:
+    await service.refresh_cache()
+    latest = await service.repository.latest_ingested_at()
+    return {
+        "status": "ok",
+        "cached_at": latest.isoformat() if latest else "",
+    }

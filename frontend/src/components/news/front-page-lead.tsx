@@ -7,12 +7,12 @@ import { ImpactBadge } from "@/components/ui/impact-badge";
 export function FrontPageLead({ article }: { article: Article }) {
   return (
     <article className="space-y-5">
-      <Link to={`/article/${article.slug}`} className="block">
+      <Link to={`/app/article/${article.slug}`} className="block">
         <EditorialPhoto article={article} />
       </Link>
       <div className="space-y-3">
         <ImpactBadge score={article.impact_score} urgency={article.urgency} />
-        <Link to={`/article/${article.slug}`} className="block">
+        <Link to={`/app/article/${article.slug}`} className="block">
           <h1 className="max-w-4xl font-heading text-4xl font-semibold leading-[1.08] tracking-[-0.07em] text-zinc-900 dark:text-white lg:text-6xl">
             {article.title}
           </h1>

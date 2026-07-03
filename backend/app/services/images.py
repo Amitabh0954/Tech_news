@@ -55,6 +55,8 @@ GENERIC_STOCK_IMAGES = [
     "igor-omilaev-eGGFZ5X2LnA-unsplash.jpg",
 ]
 
+DEFAULT_STOCK_IMAGE = "press-inference-ai-aws-beat-1920x1080-1.png"
+
 
 def generate_story_image_data_uri(title: str, label: str, accent: str | None = None) -> str:
     fill = accent or ACCENTS.get(label, "#e36100")
@@ -97,14 +99,9 @@ def select_local_story_image(title: str, excerpt: str = "", source_name: str = "
             if candidate.exists():
                 return f"/images/{filename}"
 
-    if category_name.lower() in {"ai", "security", "cloud", "oss", "tooling", "infra"} and re.search(
-        r"\b(vulnerability|outage|release|model|agent|update|incident|launch|tool|api|cve|threat|patch|risk)\b",
-        haystack,
-    ):
-        digest = hashlib.md5(haystack.encode("utf-8")).hexdigest()
-        index = int(digest[:8], 16) % len(GENERIC_STOCK_IMAGES)
-        candidate = ROOT_IMAGE_DIR / GENERIC_STOCK_IMAGES[index]
-        if candidate.exists():
-            return f"/images/{GENERIC_STOCK_IMAGES[index]}"
+    # If no match exists, return a single default stock image for all stories.
+    candidate = ROOT_IMAGE_DIR / DEFAULT_STOCK_IMAGE
+    if candidate.exists():
+        return f"/images/{DEFAULT_STOCK_IMAGE}"
 
     return None

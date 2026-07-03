@@ -224,8 +224,6 @@ class LiveNewsService:
                     source_name=source.name,
                     category_name=category.name,
                 )
-            if not selected_image:
-                selected_image = generate_story_image_data_uri(title=title, label=category.name)
 
             articles.append(
                 ArticleDetail(

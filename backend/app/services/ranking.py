@@ -21,6 +21,10 @@ class EngineeringSignalRanker:
         "ecosystem": ["react", "nextjs", "typescript", "javascript", "python", "rust", "golang", "framework", "sdk", "compiler"],
         "ai": ["openai", "anthropic", "deepmind", "gemma", "deepseek", "qwen", "reasoning", "agent", "inference", "model"],
         "oss": ["maintainer", "dependency", "release", "ci/cd", "github actions", "open source", "oss"],
+        "mobile": ["ios", "android", "swift", "kotlin", "react native", "flutter", "mobile app", "xcode"],
+        "databases": ["postgres", "postgresql", "mysql", "mongodb", "redis", "sqlite", "database", "vector database"],
+        "web": ["css", "html5", "webassembly", "wasm", "web components", "browser", "web performance"],
+        "data": ["data pipeline", "etl", "data warehouse", "apache spark", "kafka", "airflow", "data lake"],
     }
 
     HIGH_SIGNAL_PATTERNS = {
@@ -63,6 +67,38 @@ class EngineeringSignalRanker:
             "roles": ["backend", "platform"],
             "why": "Open-source ecosystem events can affect dependencies, release pipelines, and platform roadmaps.",
             "category": "OSS",
+        },
+        "mobile": {
+            "terms": ["ios", "android", "swift", "kotlin", "react native", "flutter", "xcode", "app store", "play store", "jetpack compose"],
+            "score": 1.7,
+            "urgency": "medium",
+            "roles": ["mobile", "frontend"],
+            "why": "Mobile platform and SDK changes can affect app store compliance, release cadence, and native tooling upgrades.",
+            "category": "Mobile",
+        },
+        "databases": {
+            "terms": ["postgres", "postgresql", "mysql", "mongodb", "redis", "sqlite", "cassandra", "dynamodb", "elasticsearch", "vector database", "pgvector"],
+            "score": 1.8,
+            "urgency": "medium",
+            "roles": ["backend", "platform", "data"],
+            "why": "Database engine changes affect query performance, migration paths, and data durability guarantees in production.",
+            "category": "Databases",
+        },
+        "web": {
+            "terms": ["css", "html5", "web components", "webassembly", "wasm", "browser engine", "web performance", "chrome devtools", "safari", "web accessibility"],
+            "score": 1.5,
+            "urgency": "medium",
+            "roles": ["frontend"],
+            "why": "Browser and web-platform changes can affect rendering behavior, performance budgets, and frontend compatibility.",
+            "category": "Web & Frontend",
+        },
+        "data-engineering": {
+            "terms": ["data pipeline", "etl", "data warehouse", "apache spark", "kafka", "airflow", "data lake", "streaming data", "data engineering"],
+            "score": 1.7,
+            "urgency": "medium",
+            "roles": ["data", "backend", "platform"],
+            "why": "Data pipeline and warehouse changes affect analytics reliability, freshness, and downstream reporting.",
+            "category": "Data Engineering",
         },
     }
 
@@ -122,6 +158,12 @@ class EngineeringSignalRanker:
         "GEMMA": ["gemma"],
         "QWEN": ["qwen"],
         "DEEPSEEK": ["deepseek"],
+        "IOS": ["ios", "swift", "xcode"],
+        "ANDROID": ["android", "kotlin", "jetpack compose"],
+        "POSTGRES": ["postgres", "postgresql", "pgvector"],
+        "REDIS": ["redis"],
+        "KAFKA": ["kafka"],
+        "WEBASSEMBLY": ["webassembly", "wasm"],
     }
 
     def rank(self, title: str, excerpt: str, tags: list[str], source_name: str) -> RankedSignal:

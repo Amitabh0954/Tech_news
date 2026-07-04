@@ -104,8 +104,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   const data = await response.json().catch(() => null);
   if (!response.ok) {
-    const detail = typeof data === "object" && data && "detail" in data ? String(data.detail) : "Request failed";
-    throw new Error(detail);
+    if (response.status === 401) {
+      // Expired/invalid session: clear auth so the router's ProtectedApp guard
+      // redirects to /login instead of every authenticated call surfacing its
+      // own confusing "could not load" error.
+      useAuthStore.getState().clearAuth();
+    }
+    if (typeof data === "object" && data && "detail" in data) {
+      throw new Error(String(data.detail));
+    }
+    // A non-JSON error body (data === null) almost always means the request never
+    // reached the FastAPI app at all — e.g. the backend isn't running and the Vite
+    // dev proxy (or a host's reverse proxy) returned its own bare error page instead.
+    if (data === null) {
+      throw new Error("Unable to reach the API. Start the backend or check VITE_API_BASE_URL.");
+    }
+    throw new Error("Request failed");
   }
   return data as T;
 }

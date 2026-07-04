@@ -31,7 +31,12 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     secret_key: str = Field(default="your-super-secret-key-change-this-in-production")
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    access_token_expire_minutes: int = 60 * 24 * 7
+    # Public origin this backend is reachable at. Required so image URLs served from
+    # local static files (see services/images.py) are absolute — the frontend is
+    # typically deployed on a different origin (e.g. Vercel), so a relative "/images/..."
+    # path would resolve against the frontend's own domain and 404.
+    public_base_url: str = "http://localhost:8000"
     default_llm_provider: str = "gemma"
     huggingface_api_token: str | None = None
     gemma_model_id: str = "google/gemma-4-31B-it"

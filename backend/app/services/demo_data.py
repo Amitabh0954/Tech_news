@@ -46,6 +46,10 @@ DEMO_CATEGORIES = [
     _category("Research", "research", "Breakthroughs in systems, inference, and applied ML."),
     _category("Infra", "infra", "Infrastructure and platform engineering changes."),
     _category("Supply Chain", "supply-chain", "Package, CI/CD, and dependency ecosystem risk."),
+    _category("Mobile", "mobile", "iOS, Android, and cross-platform mobile development."),
+    _category("Databases", "databases", "Database engines, query performance, and data durability."),
+    _category("Web & Frontend", "web-frontend", "Browser platform, rendering, and frontend performance changes."),
+    _category("Data Engineering", "data-engineering", "Data pipelines, warehouses, and streaming infrastructure."),
 ]
 
 

@@ -1,3 +1,5 @@
+import { useAuthStore } from "@/stores/auth-store";
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api/v1").replace(/\/$/, "");
 
 export type AuthUser = {
@@ -96,12 +98,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw error;
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     const detail = typeof data === "object" && data && "detail" in data ? String(data.detail) : "Request failed";
     throw new Error(detail);
   }
   return data as T;
+}
+
+function authHeaders(): HeadersInit {
+  const token = useAuthStore.getState().token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export const api = {
@@ -133,4 +144,16 @@ export const api = {
   getArticle: (slug: string) => request<Article>(`/news/${slug}`),
   searchNews: (query: string, page = 1, pageSize = 12) =>
     request<PaginatedArticles>(`/search?q=${encodeURIComponent(query)}&page=${page}&page_size=${pageSize}`),
+  getBookmarks: () => request<Article[]>("/bookmarks", { headers: authHeaders() }),
+  addBookmark: (articleId: string) =>
+    request<{ status: string }>("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ article_id: articleId }),
+    }),
+  removeBookmark: (articleId: string) =>
+    request<void>(`/bookmarks/${articleId}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    }),
 };

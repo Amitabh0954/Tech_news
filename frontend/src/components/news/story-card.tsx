@@ -34,7 +34,7 @@ export function StoryCard({ article }: { article: Article }) {
       <div className="mt-4 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500 dark:text-slate-500">
         <DateLine timestamp={article.published_at} />
         <div className="flex items-center gap-3">
-          <BookmarkButton slug={article.slug} />
+          <BookmarkButton articleId={article.id} />
           <a href={article.canonical_url} target="_blank" rel="noreferrer" className="text-accent">
             Source
           </a>

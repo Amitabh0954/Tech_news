@@ -37,7 +37,7 @@ export function ArticleRoute() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <ImpactBadge score={data.impact_score} urgency={data.urgency} />
         <div className="flex items-center gap-3">
-          <BookmarkButton slug={data.slug} />
+          <BookmarkButton articleId={data.id} />
           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">
             {data.source.name} · <DateLine timestamp={data.published_at} />
           </div>

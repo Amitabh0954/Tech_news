@@ -35,30 +35,45 @@ export function LoginRoute() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-background text-zinc-900 dark:text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-16 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="space-y-6">
-            <div className="inline-flex items-center rounded-full border border-slate-800 bg-slate-900/80 px-3 py-1 text-sm text-slate-300">
+            <div className="inline-flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-full border border-accent/25 bg-panel text-accent shadow-sm">
+                <div className="h-5 w-5 rounded-full border-4 border-dotted border-accent" />
+              </div>
+              <div>
+                <div className="font-heading text-2xl font-semibold tracking-[-0.05em] text-zinc-900 dark:text-white">
+                  EngIntel
+                </div>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">
+                  Engineering wire
+                </div>
+              </div>
+            </div>
+            <div className="inline-flex items-center rounded-full border border-border bg-panel px-3 py-1 text-sm text-zinc-600 dark:border-white/10 dark:text-slate-300">
               Tech news • AI signals • fast context
             </div>
             <div className="space-y-4">
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h1 className="font-heading text-4xl font-semibold leading-[1.08] tracking-[-0.06em] text-zinc-900 dark:text-white sm:text-5xl">
                 See the stories shaping engineering before the noise catches up.
               </h1>
-              <p className="max-w-2xl text-lg text-slate-400">
+              <p className="max-w-2xl text-lg leading-8 text-zinc-700 dark:text-slate-300">
                 Follow the signal across product launches, security incidents, infrastructure shifts, and developer tools.
               </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+          <div className="border border-border bg-panel p-6 shadow-panel dark:border-white/10">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Access portal</p>
-                <h2 className="text-xl font-semibold text-white">{mode === "signup" ? "Create account" : "Sign in"}</h2>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-zinc-500 dark:text-slate-500">Access portal</p>
+                <h2 className="font-heading text-xl font-semibold text-zinc-900 dark:text-white">
+                  {mode === "signup" ? "Create account" : "Sign in"}
+                </h2>
               </div>
-              <div className="rounded-full border border-slate-800 bg-slate-950/70 px-3 py-1 text-sm text-slate-400">
+              <div className="rounded-full border border-border bg-background/40 px-3 py-1 text-sm text-zinc-600 dark:border-white/10 dark:text-slate-400">
                 {mode === "signup" ? "New here" : "Returning"}
               </div>
             </div>
@@ -66,12 +81,12 @@ export function LoginRoute() {
             <form className="space-y-4" onSubmit={handleSubmit}>
               {mode === "signup" ? (
                 <div>
-                  <label className="mb-2 block text-sm text-slate-400" htmlFor="displayName">
+                  <label className="mb-2 block text-sm text-zinc-600 dark:text-slate-400" htmlFor="displayName">
                     Display name
                   </label>
                   <input
                     id="displayName"
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none ring-0"
+                    className="w-full border border-border bg-background/40 px-4 py-3 text-zinc-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
                     placeholder="Alex Chen"
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
@@ -80,13 +95,13 @@ export function LoginRoute() {
               ) : null}
 
               <div>
-                <label className="mb-2 block text-sm text-slate-400" htmlFor="email">
+                <label className="mb-2 block text-sm text-zinc-600 dark:text-slate-400" htmlFor="email">
                   Email
                 </label>
                 <input
                   id="email"
                   type="email"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none ring-0"
+                  className="w-full border border-border bg-background/40 px-4 py-3 text-zinc-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -95,13 +110,13 @@ export function LoginRoute() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-slate-400" htmlFor="password">
+                <label className="mb-2 block text-sm text-zinc-600 dark:text-slate-400" htmlFor="password">
                   Password
                 </label>
                 <input
                   id="password"
                   type="password"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none ring-0"
+                  className="w-full border border-border bg-background/40 px-4 py-3 text-zinc-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
                   placeholder="••••••••"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -109,22 +124,22 @@ export function LoginRoute() {
                 />
               </div>
 
-              {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+              {error ? <p className="text-sm text-critical">{error}</p> : null}
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-sky-500 px-4 py-3 font-medium text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full rounded-full bg-accent px-4 py-3 font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={loading}
               >
                 {loading ? "Working..." : mode === "signup" ? "Create account" : "Sign in"}
               </button>
             </form>
 
-            <div className="mt-6 flex items-center justify-between text-sm text-slate-400">
+            <div className="mt-6 flex items-center justify-between text-sm text-zinc-600 dark:text-slate-400">
               <span>{mode === "signup" ? "Already have an account?" : "Need an account?"}</span>
               <button
                 type="button"
-                className="font-medium text-slate-200 transition hover:text-white"
+                className="font-medium text-accent transition hover:opacity-80"
                 onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
               >
                 {mode === "signup" ? "Sign in" : "Create account"}

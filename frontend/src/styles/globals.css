@@ -32,7 +32,7 @@ body {
   margin: 0;
   min-width: 320px;
   background: rgb(var(--background));
-  font-family: "Inter", sans-serif;
+  font-family: "Helvetica Neue", Helvetica, "Inter", Arial, sans-serif;
   color: rgb(24 24 27);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -62,5 +62,5 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Inter", sans-serif;
+  font-family: "Helvetica Neue", Helvetica, "Inter", Arial, sans-serif;
 }

@@ -16,8 +16,8 @@ export default {
         low: "rgb(var(--low) / <alpha-value>)",
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui"],
-        heading: ["Space Grotesk", "Inter", "ui-sans-serif", "system-ui"],
+        sans: ["Helvetica Neue", "Helvetica", "Inter", "Arial", "ui-sans-serif", "system-ui"],
+        heading: ["Helvetica Neue", "Helvetica", "Inter", "Arial", "ui-sans-serif", "system-ui"],
         mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
       },
       boxShadow: {

@@ -1,23 +1,39 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useCategories } from "@/features/filters/queries";
 import { useAuthStore } from "@/stores/auth-store";
+import { useUIStore } from "@/stores/ui-store";
 
-const navItems = [
+const pageNavItems = [
   { to: "/app", label: "Top Stories" },
-  { to: "/app/critical", label: "Security" },
-  { to: "/app/search", label: "AI & Agents" },
-  { to: "/app/bookmarks", label: "Cloud" },
+  { to: "/app/critical", label: "Critical" },
+  { to: "/app/bookmarks", label: "Saved" },
   { to: "/app/architecture", label: "Architecture" },
 ];
+
+// Only the highest-traffic categories get a direct shortcut in the header;
+// the full category list always lives in the home page sidebar filter.
+const FEATURED_CATEGORY_SLUGS = ["security", "ai"];
 
 export function TopHeader() {
   const navigate = useNavigate();
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const { setActiveCategory } = useUIStore();
+  const { data: categories } = useCategories();
+
+  const featuredCategories = FEATURED_CATEGORY_SLUGS.map((slug) => categories?.find((category) => category.slug === slug)).filter(
+    (category): category is NonNullable<typeof category> => Boolean(category),
+  );
 
   const handleLogout = () => {
     clearAuth();
     navigate("/login", { replace: true });
+  };
+
+  const handleCategoryClick = (slug: string) => {
+    setActiveCategory(slug);
+    navigate("/app");
   };
 
   return (
@@ -51,7 +67,28 @@ export function TopHeader() {
           </label>
 
           <nav className="hidden items-center gap-2 text-sm font-medium text-zinc-700 md:flex dark:text-slate-200">
-            {navItems.map((item) => (
+            <NavLink
+              to="/app"
+              end
+              className={({ isActive }) =>
+                `rounded-full px-3 py-2 transition-all duration-200 hover:bg-accent/10 hover:text-accent ${
+                  isActive ? "bg-accent/10 text-accent" : ""
+                }`
+              }
+            >
+              Top Stories
+            </NavLink>
+            {featuredCategories.map((category) => (
+              <button
+                key={category.slug}
+                type="button"
+                onClick={() => handleCategoryClick(category.slug)}
+                className="rounded-full px-3 py-2 transition-all duration-200 hover:bg-accent/10 hover:text-accent"
+              >
+                {category.name}
+              </button>
+            ))}
+            {pageNavItems.slice(1).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

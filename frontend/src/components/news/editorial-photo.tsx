@@ -34,7 +34,7 @@ export function EditorialPhoto({
       className={cn(
         "relative overflow-hidden border border-border bg-gradient-to-br dark:border-white/10",
         tone,
-        hasImage ? (compact ? "aspect-[16/10]" : "aspect-[16/10] lg:aspect-[16/9]") : compact ? "rounded-3xl bg-white/90 p-5 shadow-sm dark:bg-zinc-950/90" : "rounded-3xl bg-white/95 p-6 shadow-sm dark:bg-zinc-950/95",
+        hasImage ? (compact ? "aspect-square" : "aspect-[16/10] lg:aspect-[16/9]") : compact ? "rounded-3xl bg-white/90 p-5 shadow-sm dark:bg-zinc-950/90" : "rounded-3xl bg-white/95 p-6 shadow-sm dark:bg-zinc-950/95",
         className,
       )}
     >

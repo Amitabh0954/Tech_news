@@ -11,7 +11,6 @@ import httpx
 from slugify import slugify
 
 from app.core.config import settings
-from app.services.images import generate_story_image_data_uri
 
 
 def _extract_first_image_from_html(html: str) -> str | None:
@@ -79,52 +78,57 @@ class RSSProvider(BaseProvider):
     def __init__(self, feed_urls: list[str] | None = None) -> None:
         self.feed_urls = feed_urls or settings.rss_feed_urls
 
-    async def fetch_items(self) -> list[dict[str, Any]]:
+    async def _fetch_feed(self, feed_url: str) -> list[dict[str, Any]]:
+        try:
+            feed = await asyncio.to_thread(feedparser.parse, feed_url)
+        except Exception:
+            return []
+
         items: list[dict[str, Any]] = []
-        for feed_url in self.feed_urls:
-            try:
-                feed = await asyncio.to_thread(feedparser.parse, feed_url)
-            except Exception:
+        feed_title = getattr(getattr(feed, "feed", None), "title", "") or ""
+        for entry in getattr(feed, "entries", [])[: settings.rss_story_limit_per_feed]:
+            title = unescape(getattr(entry, "title", "")).strip()
+            if not title:
                 continue
-            feed_title = getattr(getattr(feed, "feed", None), "title", "") or ""
-            for entry in getattr(feed, "entries", [])[: settings.rss_story_limit_per_feed]:
-                title = unescape(getattr(entry, "title", "")).strip()
-                if not title:
-                    continue
-                link = getattr(entry, "link", "")
-                summary = unescape(getattr(entry, "summary", "")).strip()
-                full_content = ""
-                if getattr(entry, "content", None):
-                    try:
-                        full_content = unescape(entry.content[0].value).strip()
-                    except Exception:
-                        full_content = ""
-                published_struct = getattr(entry, "published_parsed", None)
-                published_at = (
-                    datetime(*published_struct[:6], tzinfo=UTC) if published_struct else None
-                )
-                host = urlparse(link).netloc if link else "rss-feed"
-                source_name = feed_title or host
-                source_slug = slugify(source_name) or host.replace(".", "-")
-                youtube_image = _youtube_thumbnail(entry, link) if "youtube.com" in host else None
-                image_url = youtube_image or _extract_rss_image(entry, summary) or generate_story_image_data_uri(title=title, label="RSS")
-                items.append(
-                    {
-                        "external_id": slugify(f"{feed_url}-{title}")[:120],
-                        "source_slug": source_slug,
-                        "source_name": source_name,
-                        "source_type": "youtube" if "youtube.com" in host else "rss",
-                        "title": title,
-                        "canonical_url": link or feed_url,
-                        "published_at": published_at,
-                        "author": getattr(entry, "author", None),
-                        "content": full_content or summary,
-                        "excerpt": summary[:500] or title,
-                        "image_url": image_url,
-                        "tags": ["rss", host, "youtube" if "youtube.com" in host else "article"],
-                        "raw_metadata": {"feed_url": feed_url},
-                    }
-                )
+            link = getattr(entry, "link", "")
+            summary = unescape(getattr(entry, "summary", "")).strip()
+            full_content = ""
+            if getattr(entry, "content", None):
+                try:
+                    full_content = unescape(entry.content[0].value).strip()
+                except Exception:
+                    full_content = ""
+            published_struct = getattr(entry, "published_parsed", None)
+            published_at = datetime(*published_struct[:6], tzinfo=UTC) if published_struct else None
+            host = urlparse(link).netloc if link else "rss-feed"
+            source_name = feed_title or host
+            source_slug = slugify(source_name) or host.replace(".", "-")
+            youtube_image = _youtube_thumbnail(entry, link) if "youtube.com" in host else None
+            image_url = youtube_image or _extract_rss_image(entry, summary)
+            items.append(
+                {
+                    "external_id": slugify(f"{feed_url}-{title}")[:120],
+                    "source_slug": source_slug,
+                    "source_name": source_name,
+                    "source_type": "youtube" if "youtube.com" in host else "rss",
+                    "title": title,
+                    "canonical_url": link or feed_url,
+                    "published_at": published_at,
+                    "author": getattr(entry, "author", None),
+                    "content": full_content or summary,
+                    "excerpt": summary[:500] or title,
+                    "image_url": image_url,
+                    "tags": ["rss", host, "youtube" if "youtube.com" in host else "article"],
+                    "raw_metadata": {"feed_url": feed_url},
+                }
+            )
+        return items
+
+    async def fetch_items(self) -> list[dict[str, Any]]:
+        batches = await asyncio.gather(*[self._fetch_feed(feed_url) for feed_url in self.feed_urls])
+        items: list[dict[str, Any]] = []
+        for batch in batches:
+            items.extend(batch)
         return items
 
 
@@ -178,8 +182,7 @@ class GitHubProvider(BaseProvider):
                         "author": repo.get("owner", {}).get("login"),
                         "content": description,
                         "excerpt": description[:500],
-                        "image_url": repo.get("owner", {}).get("avatar_url")
-                        or generate_story_image_data_uri(title=title, label="GitHub"),
+                        "image_url": repo.get("owner", {}).get("avatar_url"),
                         "tags": ["github", repo.get("language") or "unknown", "repository"],
                         "raw_metadata": {
                             "stars": repo.get("stargazers_count"),
@@ -233,7 +236,7 @@ class RedditProvider(BaseProvider):
                         "excerpt": (post.get("selftext") or title)[:500],
                         "image_url": post.get("thumbnail")
                         if str(post.get("thumbnail", "")).startswith("http")
-                        else generate_story_image_data_uri(title=title, label="Reddit"),
+                        else None,
                         "tags": ["reddit", subreddit, "discussion", "top"],
                         "raw_metadata": {
                             "score": post.get("score"),

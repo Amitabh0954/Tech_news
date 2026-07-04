@@ -1,7 +1,23 @@
 from functools import lru_cache
+from urllib.parse import quote
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _normalize_database_url(url: str) -> str:
+    """Repair legacy Postgres URLs with an unescaped @ in the password."""
+    if "://" not in url or url.count("@") <= 1:
+        return url
+
+    scheme, remainder = url.split("://", 1)
+    credentials, host = remainder.rsplit("@", 1)
+
+    if ":" not in credentials:
+        return url
+
+    username, password = credentials.split(":", 1)
+    return f"{scheme}://{username}:{quote(password, safe='')}@{host}"
 
 
 class Settings(BaseSettings):
@@ -10,9 +26,12 @@ class Settings(BaseSettings):
     app_name: str = "Engineering Intelligence API"
     app_env: str = "development"
     database_url: str = Field(
-        default="postgresql+asyncpg://engintel:engintel@localhost:5432/engintel"
+        default="postgresql+asyncpg://postgres:amit%400954@localhost:5432/Tech_news?ssl=prefer"
     )
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    secret_key: str = Field(default="your-super-secret-key-change-this-in-production")
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
     default_llm_provider: str = "gemma"
     huggingface_api_token: str | None = None
     gemma_model_id: str = "google/gemma-4-31B-it"
@@ -87,11 +106,18 @@ class Settings(BaseSettings):
     hacker_news_base_url: str = "https://hacker-news.firebaseio.com/v0"
     hacker_news_story_limit: int = 20
     llm_relevance_enabled: bool = False
+    ingestion_interval_minutes: int = 7
+
+    @property
+    def normalized_database_url(self) -> str:
+        return _normalize_database_url(self.database_url)
 
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    settings.database_url = settings.normalized_database_url
+    return settings
 
 
 settings = get_settings()

@@ -44,6 +44,8 @@ DEMO_CATEGORIES = [
     _category("OSS", "oss", "Open-source ecosystem maintenance and release-impact news."),
     _category("Tooling", "tooling", "Developer tooling, compiler, runtime, and framework updates."),
     _category("Research", "research", "Breakthroughs in systems, inference, and applied ML."),
+    _category("Infra", "infra", "Infrastructure and platform engineering changes."),
+    _category("Supply Chain", "supply-chain", "Package, CI/CD, and dependency ecosystem risk."),
 ]
 
 

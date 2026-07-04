@@ -1,20 +1,45 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useCategories } from "@/features/filters/queries";
+import { useAuthStore } from "@/stores/auth-store";
+import { useUIStore } from "@/stores/ui-store";
 
-const navItems = [
-  { to: "/", label: "Top Stories" },
-  { to: "/critical", label: "Security" },
-  { to: "/search", label: "AI & Agents" },
-  { to: "/bookmarks", label: "Cloud" },
-  { to: "/architecture", label: "Architecture" },
+const pageNavItems = [
+  { to: "/app", label: "Top Stories" },
+  { to: "/app/critical", label: "Critical" },
+  { to: "/app/bookmarks", label: "Saved" },
+  { to: "/app/architecture", label: "Architecture" },
 ];
 
+// Only the highest-traffic categories get a direct shortcut in the header;
+// the full category list always lives in the home page sidebar filter.
+const FEATURED_CATEGORY_SLUGS = ["security", "ai"];
+
 export function TopHeader() {
+  const navigate = useNavigate();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const { setActiveCategory } = useUIStore();
+  const { data: categories } = useCategories();
+
+  const featuredCategories = FEATURED_CATEGORY_SLUGS.map((slug) => categories?.find((category) => category.slug === slug)).filter(
+    (category): category is NonNullable<typeof category> => Boolean(category),
+  );
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate("/login", { replace: true });
+  };
+
+  const handleCategoryClick = (slug: string) => {
+    setActiveCategory(slug);
+    navigate("/app");
+  };
+
   return (
     <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-8">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/app" className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-full border border-accent/25 bg-white/70 text-accent shadow-sm dark:bg-zinc-900/70">
             <div className="h-5 w-5 rounded-full border-4 border-dotted border-accent" />
           </div>
@@ -42,7 +67,28 @@ export function TopHeader() {
           </label>
 
           <nav className="hidden items-center gap-2 text-sm font-medium text-zinc-700 md:flex dark:text-slate-200">
-            {navItems.map((item) => (
+            <NavLink
+              to="/app"
+              end
+              className={({ isActive }) =>
+                `rounded-full px-3 py-2 transition-all duration-200 hover:bg-accent/10 hover:text-accent ${
+                  isActive ? "bg-accent/10 text-accent" : ""
+                }`
+              }
+            >
+              Top Stories
+            </NavLink>
+            {featuredCategories.map((category) => (
+              <button
+                key={category.slug}
+                type="button"
+                onClick={() => handleCategoryClick(category.slug)}
+                className="rounded-full px-3 py-2 transition-all duration-200 hover:bg-accent/10 hover:text-accent"
+              >
+                {category.name}
+              </button>
+            ))}
+            {pageNavItems.slice(1).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -59,6 +105,13 @@ export function TopHeader() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:border-rose-500/50 dark:hover:bg-rose-500/20"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>

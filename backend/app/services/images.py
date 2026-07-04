@@ -34,6 +34,15 @@ LOCAL_STOCK_IMAGES = [
     ("android", "android.png"),
 ]
 
+SPECIFIC_STORY_IMAGES = [
+    (("apple", "app store"), "Apple-App-Store-hero-260608_inline.jpg.large_2x.jpg"),
+    (("apple", "creator studio"), "Apple-Creator-Studio-hero-lp.jpg.landing-big_2x.jpg"),
+    (("apple", "development tools"), "Apple-development-tools-hero-260608_big.jpg.large_2x.jpg"),
+    (("apple", "xcode"), "Apple-development-tools-lifestyle-260608_big.jpg.large_2x.jpg"),
+    (("microsoft", "blog"), "official-microsoft-blog-header.jpeg"),
+    (("aws", "inference"), "press-inference-ai-aws-beat-1920x1080-1.png"),
+]
+
 LABELLED_STOCK_IMAGES = {
     "brp": "official-microsoft-blog-header.jpeg",
     "microsoft": "microsoftlogo.png",
@@ -53,6 +62,7 @@ GENERIC_STOCK_IMAGES = [
     "growtika-nGoCBxiaRO0-unsplash.jpg",
     "kevin-ache-2JJ3wBHu4_0-unsplash.jpg",
     "igor-omilaev-eGGFZ5X2LnA-unsplash.jpg",
+    "images.jfif",
 ]
 
 DEFAULT_STOCK_IMAGE = "press-inference-ai-aws-beat-1920x1080-1.png"
@@ -87,6 +97,12 @@ def generate_story_image_data_uri(title: str, label: str, accent: str | None = N
 def select_local_story_image(title: str, excerpt: str = "", source_name: str = "", category_name: str = "") -> str | None:
     haystack = " ".join([title, excerpt, source_name, category_name]).lower()
 
+    for keywords, filename in SPECIFIC_STORY_IMAGES:
+        if all(keyword in haystack for keyword in keywords):
+            candidate = ROOT_IMAGE_DIR / filename
+            if candidate.exists():
+                return f"/images/{filename}"
+
     for label, filename in LABELLED_STOCK_IMAGES.items():
         if label in haystack:
             candidate = ROOT_IMAGE_DIR / filename
@@ -99,7 +115,12 @@ def select_local_story_image(title: str, excerpt: str = "", source_name: str = "
             if candidate.exists():
                 return f"/images/{filename}"
 
-    # If no match exists, return a single default stock image for all stories.
+    if GENERIC_STOCK_IMAGES:
+        filename = GENERIC_STOCK_IMAGES[int(hashlib.sha1(haystack.encode("utf-8")).hexdigest(), 16) % len(GENERIC_STOCK_IMAGES)]
+        candidate = ROOT_IMAGE_DIR / filename
+        if candidate.exists():
+            return f"/images/{filename}"
+
     candidate = ROOT_IMAGE_DIR / DEFAULT_STOCK_IMAGE
     if candidate.exists():
         return f"/images/{DEFAULT_STOCK_IMAGE}"

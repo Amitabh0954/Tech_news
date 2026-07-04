@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 
 import type { Article } from "@/lib/api";
 import { ImpactBadge } from "@/components/ui/impact-badge";
+import { DateLine } from "@/components/news/article-primitives";
 
 export function CriticalAlertStrip({ items }: { items: Article[] }) {
   return (
@@ -18,10 +19,12 @@ export function CriticalAlertStrip({ items }: { items: Article[] }) {
             transition={{ delay: index * 0.04 }}
             className="border-l-2 border-critical bg-critical/5 transition-colors hover:bg-critical/10"
           >
-            <Link to={`/article/${item.slug}`} className="block p-4">
+            <Link to={`/app/article/${item.slug}`} className="block p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <ImpactBadge score={item.impact_score} urgency={item.urgency} />
-                <div className="text-xs uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-500">{item.source.name}</div>
+                <div className="text-xs uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-500">
+                  {item.source.name} · <DateLine timestamp={item.published_at} />
+                </div>
               </div>
               <h2 className="font-heading text-lg font-semibold leading-tight text-zinc-900 dark:text-white">
                 {item.title}

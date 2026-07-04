@@ -1,9 +1,8 @@
-import { Link } from "react-router-dom";
-
-import { useBookmarkStore } from "@/stores/bookmark-store";
+import { StoryCard } from "@/components/news/story-card";
+import { useBookmarks } from "@/features/bookmarks/queries";
 
 export function BookmarksRoute() {
-  const savedSlugs = useBookmarkStore((state) => state.savedSlugs);
+  const { data: bookmarks, isLoading, isError } = useBookmarks();
 
   return (
     <section className="border border-border bg-panel p-6 dark:border-white/10">
@@ -11,21 +10,23 @@ export function BookmarksRoute() {
       <h1 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.05em] text-zinc-900 dark:text-white">
         Saved articles
       </h1>
-      <p className="mt-3 text-sm leading-7 text-zinc-700 dark:text-slate-300">Local saves work now, and the backend bookmark API is scaffolded for authenticated sync.</p>
-      <div className="mt-6 space-y-3">
-        {savedSlugs.length ? (
-          savedSlugs.map((slug) => (
-            <Link
-              key={slug}
-              to={`/article/${slug}`}
-              className="block border border-border bg-background/40 px-4 py-3 text-sm text-zinc-800 dark:border-white/10 dark:text-slate-200"
-            >
-              {slug}
-            </Link>
+      <p className="mt-3 text-sm leading-7 text-zinc-700 dark:text-slate-300">
+        Stories you save are stored on your account and stay available across devices.
+      </p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-40 animate-pulse border border-border bg-background/40 dark:border-white/10" />
           ))
+        ) : isError ? (
+          <div className="col-span-full border border-critical/30 bg-critical/5 px-4 py-6 text-sm text-critical">
+            Could not load your saved articles. Try refreshing the page.
+          </div>
+        ) : bookmarks?.length ? (
+          bookmarks.map((article) => <StoryCard key={article.id} article={article} />)
         ) : (
-          <div className="border border-dashed border-border px-4 py-6 text-sm text-zinc-500 dark:border-white/10 dark:text-slate-400">
-            No saved stories yet.
+          <div className="col-span-full border border-dashed border-border px-4 py-6 text-sm text-zinc-500 dark:border-white/10 dark:text-slate-400">
+            No saved stories yet. Tap "Save" on any article to add it here.
           </div>
         )}
       </div>

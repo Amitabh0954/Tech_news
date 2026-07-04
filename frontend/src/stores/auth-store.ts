@@ -1,61 +1,25 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type Credentials = {
-  email: string;
-  password: string;
-};
-
-type LoginInput = Credentials;
+import type { AuthUser } from "@/lib/api";
 
 type AuthState = {
-  registeredUser: Credentials | null;
-  isAuthenticated: boolean;
-  registerAndLogin: (input: Credentials) => { success: true };
-  login: (input: LoginInput) => { success: true } | { success: false; error: string };
-  logout: () => void;
+  user: AuthUser | null;
+  token: string | null;
+  setAuth: (user: AuthUser | null, token: string | null) => void;
+  clearAuth: () => void;
 };
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
-      registeredUser: null,
-      isAuthenticated: false,
-      registerAndLogin: (input) => {
-        set({
-          registeredUser: {
-            email: input.email.trim().toLowerCase(),
-            password: input.password,
-          },
-          isAuthenticated: true,
-        });
-
-        return { success: true };
-      },
-      login: (input) => {
-        const registeredUser = get().registeredUser;
-
-        if (!registeredUser) {
-          return { success: false, error: "No account has been set up yet." };
-        }
-
-        const email = input.email.trim().toLowerCase();
-
-        if (registeredUser.email !== email || registeredUser.password !== input.password) {
-          return { success: false, error: "The email or password does not match the saved account." };
-        }
-
-        set({ isAuthenticated: true });
-        return { success: true };
-      },
-      logout: () => set({ isAuthenticated: false }),
+    (set) => ({
+      user: null,
+      token: null,
+      setAuth: (user, token) => set({ user, token }),
+      clearAuth: () => set({ user: null, token: null }),
     }),
     {
-      name: "engintel-auth",
-      partialize: (state) => ({
-        registeredUser: state.registeredUser,
-        isAuthenticated: state.isAuthenticated,
-      }),
+      name: "auth-storage",
     },
   ),
 );

@@ -6,6 +6,9 @@ from app.repositories.news import NewsRepository, TaxonomyRepository
 from app.services.news import NewsService, TaxonomyService
 
 
+__all__ = ["get_db", "get_news_service", "get_taxonomy_service"]
+
+
 def get_news_service(db: AsyncSession = Depends(get_db)) -> NewsService:
     return NewsService(NewsRepository(db))
 

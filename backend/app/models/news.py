@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -84,7 +83,6 @@ class Article(TimestampMixin, Base):
     impact_score: Mapped[float] = mapped_column(Numeric(4, 2), default=0)
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(768))
     metadata_json: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
 
     source: Mapped["Source"] = relationship(back_populates="articles")

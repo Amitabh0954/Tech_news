@@ -13,14 +13,35 @@ from slugify import slugify
 from app.core.config import settings
 
 
+_SKIP_IMAGE_HINTS = ("avatar", "gravatar", "spacer", "pixel", "tracking", "1x1", "icon-", "favicon", "badge")
+
+
 def _extract_first_image_from_html(html: str) -> str | None:
     if not html:
         return None
-    match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.IGNORECASE)
-    return match.group(1) if match else None
+    for match in re.finditer(r'<img[^>]+src=["\']([^"\']+)["\']', html, re.IGNORECASE):
+        src = match.group(1)
+        lowered = src.lower()
+        if any(hint in lowered for hint in _SKIP_IMAGE_HINTS):
+            continue
+        width_match = re.search(r'width=["\'](\d+)', match.group(0))
+        if width_match and int(width_match.group(1)) < 80:
+            continue
+        return src
+    return None
 
 
-def _extract_rss_image(entry: Any, summary: str) -> str | None:
+def _strip_html_tags(text: str) -> str:
+    """Plain-text excerpt for fields rendered as text, not HTML (e.g. card summaries).
+    unescape() alone only decodes entities like &lt;p&gt; -> <p> — it leaves the tags
+    themselves in place, which then show up literally in the UI.
+    """
+    if not text:
+        return text
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", text)).strip()
+
+
+def _extract_rss_image(entry: Any, summary: str, full_content: str = "") -> str | None:
     media_content = getattr(entry, "media_content", None) or []
     if media_content and isinstance(media_content, list):
       first = media_content[0]
@@ -46,7 +67,34 @@ def _extract_rss_image(entry: Any, summary: str) -> str | None:
         if href and link_type and str(link_type).startswith("image/"):
             return str(href)
 
-    return _extract_first_image_from_html(summary)
+    # Many feeds (e.g. Blogger-based blogs like Google Developers Blog) only put the
+    # real post image inside the full HTML body, not the short summary — without this,
+    # those articles fell through to a generic company-logo/placeholder fallback.
+    return _extract_first_image_from_html(summary) or _extract_first_image_from_html(full_content)
+
+
+_META_TAG_PATTERN = re.compile(r"<meta\b[^>]*>", re.IGNORECASE)
+_META_NAME_PATTERN = re.compile(r'(?:property|name)=["\'](og:image|twitter:image)["\']', re.IGNORECASE)
+_META_CONTENT_PATTERN = re.compile(r'content=["\']([^"\']+)["\']', re.IGNORECASE)
+
+
+async def _fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
+    """Last resort: some feeds (e.g. Blogger-based blogs) carry no image data at all,
+    only a link to the live page. Fetch that page and read its og:image so cards use
+    the real article image instead of a generic company-logo/placeholder fallback.
+    """
+    try:
+        response = await client.get(url, timeout=6.0)
+        if response.status_code >= 400:
+            return None
+        for tag in _META_TAG_PATTERN.findall(response.text[:200_000]):
+            if _META_NAME_PATTERN.search(tag):
+                content_match = _META_CONTENT_PATTERN.search(tag)
+                if content_match:
+                    return content_match.group(1)
+        return None
+    except Exception:
+        return None
 
 
 def _youtube_thumbnail(entry: Any, link: str) -> str | None:
@@ -104,7 +152,8 @@ class RSSProvider(BaseProvider):
             source_name = feed_title or host
             source_slug = slugify(source_name) or host.replace(".", "-")
             youtube_image = _youtube_thumbnail(entry, link) if "youtube.com" in host else None
-            image_url = youtube_image or _extract_rss_image(entry, summary)
+            image_url = youtube_image or _extract_rss_image(entry, summary, full_content)
+            plain_summary = _strip_html_tags(summary)
             items.append(
                 {
                     "external_id": slugify(f"{feed_url}-{title}")[:120],
@@ -116,12 +165,23 @@ class RSSProvider(BaseProvider):
                     "published_at": published_at,
                     "author": getattr(entry, "author", None),
                     "content": full_content or summary,
-                    "excerpt": summary[:500] or title,
+                    "excerpt": plain_summary[:500] or title,
                     "image_url": image_url,
                     "tags": ["rss", host, "youtube" if "youtube.com" in host else "article"],
                     "raw_metadata": {"feed_url": feed_url},
                 }
             )
+
+        missing_image = [item for item in items if not item["image_url"] and item["canonical_url"]]
+        if missing_image:
+            async with httpx.AsyncClient(headers={"User-Agent": "Mozilla/5.0 (compatible; EngIntelBot/1.0)"}) as client:
+                fetched = await asyncio.gather(
+                    *[_fetch_og_image(client, item["canonical_url"]) for item in missing_image]
+                )
+            for item, og_image in zip(missing_image, fetched):
+                if og_image:
+                    item["image_url"] = og_image
+
         return items
 
     async def fetch_items(self) -> list[dict[str, Any]]:
@@ -295,7 +355,7 @@ class HackerNewsProvider(BaseProvider):
         if item.get("descendants", 0) >= 50:
             tags.append("high-discussion")
 
-        excerpt = unescape(item.get("text") or "").strip() or title
+        excerpt = _strip_html_tags(unescape(item.get("text") or "")).strip() or title
 
         return {
             "external_id": str(item["id"]),

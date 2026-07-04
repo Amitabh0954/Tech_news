@@ -19,7 +19,7 @@ const FEATURED_CATEGORY_SLUGS = ["security", "ai"];
 export function TopHeader() {
   const navigate = useNavigate();
   const clearAuth = useAuthStore((state) => state.clearAuth);
-  const { setActiveCategory } = useUIStore();
+  const { activeCategory, setActiveCategory } = useUIStore();
   const { data: categories } = useCategories();
 
   const featuredCategories = FEATURED_CATEGORY_SLUGS.map((slug) => categories?.find((category) => category.slug === slug)).filter(
@@ -70,9 +70,10 @@ export function TopHeader() {
             <NavLink
               to="/app"
               end
+              onClick={() => setActiveCategory(null)}
               className={({ isActive }) =>
                 `rounded-full px-3 py-2 transition-all duration-200 hover:bg-accent/10 hover:text-accent ${
-                  isActive ? "bg-accent/10 text-accent" : ""
+                  isActive && !activeCategory ? "bg-accent/10 text-accent" : ""
                 }`
               }
             >
@@ -83,7 +84,9 @@ export function TopHeader() {
                 key={category.slug}
                 type="button"
                 onClick={() => handleCategoryClick(category.slug)}
-                className="rounded-full px-3 py-2 transition-all duration-200 hover:bg-accent/10 hover:text-accent"
+                className={`rounded-full px-3 py-2 transition-all duration-200 hover:bg-accent/10 hover:text-accent ${
+                  activeCategory === category.slug ? "bg-accent/10 text-accent" : ""
+                }`}
               >
                 {category.name}
               </button>

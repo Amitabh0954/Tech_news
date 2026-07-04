@@ -15,16 +15,19 @@ class ImpactFactors:
 
 
 class ImpactScoringService:
+    # Weighted toward the factors that actually distinguish "this is a big deal" (security,
+    # urgency, reach) and away from ones that regress everything toward the mean
+    # (enterprise_relevance, novelty), so scores spread out instead of clustering around 6-7.
     WEIGHTS = {
-        "ecosystem_reach": 0.16,
-        "security_severity": 0.18,
-        "developer_impact": 0.14,
+        "ecosystem_reach": 0.17,
+        "security_severity": 0.20,
+        "developer_impact": 0.12,
         "infra_relevance": 0.12,
-        "enterprise_relevance": 0.10,
-        "urgency": 0.12,
-        "novelty": 0.06,
-        "ai_ecosystem_importance": 0.06,
-        "downstream_dependency_risk": 0.06,
+        "enterprise_relevance": 0.05,
+        "urgency": 0.16,
+        "novelty": 0.03,
+        "ai_ecosystem_importance": 0.08,
+        "downstream_dependency_risk": 0.07,
     }
 
     def score(self, factors: ImpactFactors) -> float:

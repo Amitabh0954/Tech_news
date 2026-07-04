@@ -12,9 +12,17 @@ export function HomeRoute() {
     useNewsFeed(activeCategory);
 
   const items = newsFeed?.pages.flatMap((page) => page.items) ?? [];
-  const leadStory = items[0];
-  const secondaryStories = items.slice(1, 3);
-  const riverStories = items.slice(3);
+
+  // The full river below stays newest-first. But for the featured lead/secondary
+  // slots, surface the highest-impact story among recent stories instead of
+  // whichever happened to publish last — a 9.4 from two hours ago should lead
+  // over a 5.8 from ten minutes ago.
+  const RECENCY_WINDOW = 10;
+  const featuredCandidates = [...items.slice(0, RECENCY_WINDOW)].sort((a, b) => b.impact_score - a.impact_score);
+  const leadStory = featuredCandidates[0] ?? items[0];
+  const secondaryStories = featuredCandidates.slice(1, 3);
+  const featuredIds = new Set([leadStory?.id, ...secondaryStories.map((story) => story.id)].filter(Boolean));
+  const riverStories = items.filter((item) => !featuredIds.has(item.id));
 
   return (
     <div className="space-y-8">

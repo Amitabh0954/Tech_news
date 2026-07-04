@@ -3,6 +3,8 @@ import hashlib
 import re
 from pathlib import Path
 
+from app.core.config import settings
+
 
 ACCENTS = {
     "AI": "#7c3aed",
@@ -94,6 +96,14 @@ def generate_story_image_data_uri(title: str, label: str, accent: str | None = N
     return f"data:image/svg+xml;base64,{encoded}"
 
 
+def _image_url(filename: str) -> str:
+    # Must be absolute: the frontend is typically served from a different origin
+    # than this backend (e.g. Vercel + a separate API host), so a bare "/images/..."
+    # path would resolve against the frontend's own domain and 404.
+    base = settings.public_base_url.rstrip("/")
+    return f"{base}/images/{filename}"
+
+
 def select_local_story_image(title: str, excerpt: str = "", source_name: str = "", category_name: str = "") -> str | None:
     haystack = " ".join([title, excerpt, source_name, category_name]).lower()
 
@@ -101,28 +111,28 @@ def select_local_story_image(title: str, excerpt: str = "", source_name: str = "
         if all(keyword in haystack for keyword in keywords):
             candidate = ROOT_IMAGE_DIR / filename
             if candidate.exists():
-                return f"/images/{filename}"
+                return _image_url(filename)
 
     for label, filename in LABELLED_STOCK_IMAGES.items():
         if label in haystack:
             candidate = ROOT_IMAGE_DIR / filename
             if candidate.exists():
-                return f"/images/{filename}"
+                return _image_url(filename)
 
     for keyword, filename in LOCAL_STOCK_IMAGES:
         if keyword in haystack:
             candidate = ROOT_IMAGE_DIR / filename
             if candidate.exists():
-                return f"/images/{filename}"
+                return _image_url(filename)
 
     if GENERIC_STOCK_IMAGES:
         filename = GENERIC_STOCK_IMAGES[int(hashlib.sha1(haystack.encode("utf-8")).hexdigest(), 16) % len(GENERIC_STOCK_IMAGES)]
         candidate = ROOT_IMAGE_DIR / filename
         if candidate.exists():
-            return f"/images/{filename}"
+            return _image_url(filename)
 
     candidate = ROOT_IMAGE_DIR / DEFAULT_STOCK_IMAGE
     if candidate.exists():
-        return f"/images/{DEFAULT_STOCK_IMAGE}"
+        return _image_url(DEFAULT_STOCK_IMAGE)
 
     return None

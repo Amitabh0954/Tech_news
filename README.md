@@ -12,7 +12,7 @@ A production-oriented engineering intelligence news platform focused on high-sig
 | --- |
 | ![Article summary sections, impact score panel, and link to the original article](docs/screenshots/article-summary.png) |
 
-*Save your own screenshots into `docs/screenshots/` using the filenames above and they'll render here automatically.*
+
 
 ## Architecture
 

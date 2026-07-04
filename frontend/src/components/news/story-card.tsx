@@ -4,6 +4,7 @@ import type { Article } from "@/lib/api";
 import { ImpactBadge } from "@/components/ui/impact-badge";
 import { BookmarkButton } from "@/components/ui/bookmark-button";
 import { TagPill } from "@/components/ui/tag-pill";
+import { DateLine } from "@/components/news/article-primitives";
 
 export function StoryCard({ article }: { article: Article }) {
   return (
@@ -31,7 +32,7 @@ export function StoryCard({ article }: { article: Article }) {
         ) : null}
       </Link>
       <div className="mt-4 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500 dark:text-slate-500">
-        <span>{new Date(article.published_at).toLocaleString()}</span>
+        <DateLine timestamp={article.published_at} />
         <div className="flex items-center gap-3">
           <BookmarkButton slug={article.slug} />
           <a href={article.canonical_url} target="_blank" rel="noreferrer" className="text-accent">

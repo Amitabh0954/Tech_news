@@ -1,30 +1,24 @@
+import logging
+
 from app.repositories.news import NewsRepository, TaxonomyRepository
-from app.services.demo_data import DEMO_CATEGORIES, DEMO_SOURCES, get_demo_article, get_demo_feed
-from app.services.live_news import LiveNewsService
 from app.schemas.news import PaginatedArticles
+from app.services.demo_data import DEMO_CATEGORIES, DEMO_SOURCES, get_demo_article, get_demo_feed
+from app.workers.ingestion_worker import run_ingestion_cycle
+
+logger = logging.getLogger(__name__)
 
 
 class NewsService:
-    CACHE_TTL_MINUTES = 30
+    """Reads are always DB-only and fast. Freshness comes from the scheduled ingestion
+    worker (see app.main lifespan), not from live provider calls made during a request.
+    """
 
     def __init__(self, repository: NewsRepository) -> None:
         self.repository = repository
-        self.live_news = LiveNewsService()
 
-    async def _refresh_cache(self) -> None:
-        live = await self.live_news.collect_articles()
-        if live:
-            await self.repository.upsert_articles(live)
-
-    async def refresh_cache(self) -> None:
-        await self._refresh_cache()
-
-    async def _should_refresh_cache(self, *, page: int, query: str | None = None) -> bool:
-        if query:
-            return False
-        if page != 1:
-            return False
-        return await self.repository.is_cache_stale(self.CACHE_TTL_MINUTES)
+    async def refresh_cache(self) -> int:
+        """Explicit manual trigger (POST /ingestion/refresh) — not called from any read path."""
+        return await run_ingestion_cycle()
 
     def _demo_feed(
         self,
@@ -65,9 +59,6 @@ class NewsService:
     ) -> PaginatedArticles:
         offset = (page - 1) * page_size
         try:
-            if await self._should_refresh_cache(page=page, query=query):
-                await self._refresh_cache()
-
             rows, total = await self.repository.list_articles(
                 category=category,
                 urgency=urgency,
@@ -75,95 +66,32 @@ class NewsService:
                 limit=page_size,
                 offset=offset,
             )
-            if not rows:
-                await self._refresh_cache()
-                rows, total = await self.repository.list_articles(
-                    category=category,
-                    urgency=urgency,
-                    query=query,
-                    limit=page_size,
-                    offset=offset,
-                )
-                if rows:
-                    next_cursor = str(page + 1) if offset + page_size < total else None
-                    return PaginatedArticles(items=list(rows), total=total, next_cursor=next_cursor)
-
-                live = await self.live_news.paginated_feed(
-                    category=category,
-                    urgency=urgency,
-                    query=query,
-                    page=page,
-                    page_size=page_size,
-                )
-                if live.items:
-                    await self.repository.upsert_articles(live.items)
-                    return live
-                return self._demo_feed(
-                    category=category,
-                    urgency=urgency,
-                    query=query,
-                    page=page,
-                    page_size=page_size,
-                )
-            next_cursor = str(page + 1) if offset + page_size < total else None
-            return PaginatedArticles(items=list(rows), total=total, next_cursor=next_cursor)
         except Exception:
-            live = await self.live_news.paginated_feed(
-                category=category,
-                urgency=urgency,
-                query=query,
-                page=page,
-                page_size=page_size,
-            )
-            return live if live.items else self._demo_feed(
-                category=category,
-                urgency=urgency,
-                query=query,
-                page=page,
-                page_size=page_size,
-            )
+            logger.exception("failed to read articles from the database, serving static demo feed")
+            return self._demo_feed(category=category, urgency=urgency, query=query, page=page, page_size=page_size)
+
+        if not rows:
+            logger.info("no cached articles yet for this filter, serving static demo feed while ingestion catches up")
+            return self._demo_feed(category=category, urgency=urgency, query=query, page=page, page_size=page_size)
+
+        next_cursor = str(page + 1) if offset + page_size < total else None
+        return PaginatedArticles(items=list(rows), total=total, next_cursor=next_cursor)
 
     async def get_article(self, slug: str):
         try:
             article = await self.repository.get_by_slug(slug)
-            if article:
-                return article
-            await self._refresh_cache()
-            article = await self.repository.get_by_slug(slug)
-            if article:
-                return article
-
-            live = await self.live_news.collect_articles()
-            current = next((item for item in live if item.slug == slug), None)
-            if current:
-                related = await self.live_news.related_articles(slug)
-                current.related_story_ids = [item.id for item in related]
-                return current
-            return get_demo_article(slug)
         except Exception:
-            live = await self.live_news.collect_articles()
-            current = next((item for item in live if item.slug == slug), None)
-            if current:
-                related = await self.live_news.related_articles(slug)
-                current.related_story_ids = [item.id for item in related]
-                return current
+            logger.exception("failed to read article '%s' from the database", slug)
             return get_demo_article(slug)
+        return article or get_demo_article(slug)
 
     async def list_critical(self):
         try:
-            if await self.repository.is_cache_stale(self.CACHE_TTL_MINUTES):
-                await self._refresh_cache()
-
             rows = await self.repository.list_critical()
-            if rows:
-                return rows
-            live = await self.live_news.paginated_feed(urgency="critical", page_size=10)
-            if live.items:
-                await self.repository.upsert_articles(live.items)
-            return live.items or [article for article in get_demo_feed().items if article.urgency == "critical"]
         except Exception:
-            live = await self.live_news.paginated_feed(urgency="critical", page_size=10)
-            return live.items or [article for article in get_demo_feed().items if article.urgency == "critical"]
+            logger.exception("failed to read critical articles from the database")
+            return [article for article in get_demo_feed().items if article.urgency == "critical"]
+        return rows or [article for article in get_demo_feed().items if article.urgency == "critical"]
 
     async def list_trending(self):
         return await self.repository.list_trending_topics()

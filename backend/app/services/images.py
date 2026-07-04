@@ -62,6 +62,7 @@ GENERIC_STOCK_IMAGES = [
     "growtika-nGoCBxiaRO0-unsplash.jpg",
     "kevin-ache-2JJ3wBHu4_0-unsplash.jpg",
     "igor-omilaev-eGGFZ5X2LnA-unsplash.jpg",
+    "images.jfif",
 ]
 
 DEFAULT_STOCK_IMAGE = "press-inference-ai-aws-beat-1920x1080-1.png"

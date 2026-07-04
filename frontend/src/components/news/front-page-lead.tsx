@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import type { Article } from "@/lib/api";
 import { EditorialPhoto } from "@/components/news/editorial-photo";
+import { DateLine } from "@/components/news/article-primitives";
 import { ImpactBadge } from "@/components/ui/impact-badge";
 
 export function FrontPageLead({ article }: { article: Article }) {
@@ -21,7 +22,8 @@ export function FrontPageLead({ article }: { article: Article }) {
           {article.summary?.why_it_matters ?? article.excerpt}
         </p>
         <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">
-          {article.urgency} {article.impact_score.toFixed(1)} · {article.source.name} · {new Date(article.published_at).toLocaleString()}
+          {article.urgency} {article.impact_score.toFixed(1)} · {article.source.name} ·{" "}
+          <DateLine timestamp={article.published_at} />
         </div>
         {article.ecosystem_tags?.length ? (
           <div className="flex flex-wrap gap-2">

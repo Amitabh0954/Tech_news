@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { BookmarkButton } from "@/components/ui/bookmark-button";
 import { ImpactBadge } from "@/components/ui/impact-badge";
 import { StoryCard } from "@/components/news/story-card";
+import { DateLine } from "@/components/news/article-primitives";
 import { useNewsFeed } from "@/features/articles/queries";
 import { useArticle } from "@/features/articles/queries";
 import { sanitizeFeedHtml } from "@/lib/utils";
@@ -37,7 +38,9 @@ export function ArticleRoute() {
         <ImpactBadge score={data.impact_score} urgency={data.urgency} />
         <div className="flex items-center gap-3">
           <BookmarkButton slug={data.slug} />
-          <div className="text-xs uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">{data.source.name}</div>
+          <div className="text-xs uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">
+            {data.source.name} · <DateLine timestamp={data.published_at} />
+          </div>
         </div>
       </div>
       <h1 className="font-heading text-4xl font-semibold leading-[1.08] tracking-[-0.06em] text-zinc-900 dark:text-white">

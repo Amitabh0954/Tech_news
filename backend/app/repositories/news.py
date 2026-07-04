@@ -23,7 +23,7 @@ class NewsRepository:
                 joinedload(Article.summary),
                 joinedload(Article.impact),
             )
-            .order_by(desc(Article.impact_score), desc(Article.published_at))
+            .order_by(desc(Article.published_at), desc(Article.ingested_at))
         )
 
     async def list_articles(
@@ -231,6 +231,25 @@ class TaxonomyRepository:
     async def list_categories(self) -> Sequence[Category]:
         return (await self.db.execute(select(Category).order_by(Category.name))).scalars().all()
 
+    async def seed_default_categories(self, categories) -> None:
+        """Ensure every canonical category exists even before an article of that
+        category has been ingested, so category filters never appear incomplete."""
+        changed = False
+        for category in categories:
+            existing = await self.db.scalar(select(Category).where(Category.slug == category.slug))
+            if existing is None:
+                self.db.add(
+                    Category(
+                        id=category.id,
+                        name=category.name,
+                        slug=category.slug,
+                        description=category.description,
+                    )
+                )
+                changed = True
+        if changed:
+            await self.db.commit()
+
     async def list_sources(self) -> Sequence[Source]:
         return (await self.db.execute(select(Source).order_by(Source.trust_score.desc()))).scalars().all()
 
@@ -239,9 +258,37 @@ class BookmarkRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def create(self, user_id: str, article_id: str) -> Bookmark:
+    async def create_if_missing(self, user_id: UUID, article_id: UUID) -> Bookmark:
+        existing = await self.db.scalar(
+            select(Bookmark).where(Bookmark.user_id == user_id, Bookmark.article_id == article_id)
+        )
+        if existing:
+            return existing
         bookmark = Bookmark(user_id=user_id, article_id=article_id)
         self.db.add(bookmark)
         await self.db.commit()
         await self.db.refresh(bookmark)
         return bookmark
+
+    async def delete(self, user_id: UUID, article_id: UUID) -> None:
+        bookmark = await self.db.scalar(
+            select(Bookmark).where(Bookmark.user_id == user_id, Bookmark.article_id == article_id)
+        )
+        if bookmark:
+            await self.db.delete(bookmark)
+            await self.db.commit()
+
+    async def list_articles_for_user(self, user_id: UUID) -> Sequence[Article]:
+        stmt = (
+            select(Article)
+            .join(Bookmark, Bookmark.article_id == Article.id)
+            .where(Bookmark.user_id == user_id)
+            .options(
+                joinedload(Article.source),
+                joinedload(Article.category),
+                joinedload(Article.summary),
+                joinedload(Article.impact),
+            )
+            .order_by(desc(Bookmark.created_at))
+        )
+        return (await self.db.execute(stmt)).scalars().unique().all()

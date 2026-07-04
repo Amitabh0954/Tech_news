@@ -113,27 +113,42 @@ export function handleImageError(event: SyntheticEvent<HTMLImageElement>) {
   }
 }
 
-export function DateLine({ timestamp }: { timestamp: string }) {
+export function formatRelativeTime(timestamp: string) {
   const date = new Date(timestamp);
-  const now = new Date();
-  const diffHours = (now.getTime() - date.getTime()) / 3600000;
+  const diffMinutes = (Date.now() - date.getTime()) / 60000;
 
-  const relative = diffHours < 1 ? "Just now" : diffHours < 24 ? `${Math.floor(diffHours)}h ago` : null;
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${Math.floor(diffMinutes)}m ago`;
+  if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h ago`;
+  if (diffMinutes < 10080) return `${Math.floor(diffMinutes / 1440)}d ago`;
 
-  const absolute =
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+export function formatAbsoluteTime(timestamp: string) {
+  const date = new Date(timestamp);
+  return (
     date.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
+      year: "numeric",
     }) +
     " · " +
     date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-    });
+    })
+  );
+}
 
-  return <span className="dateline">{relative ? `${relative} · ${absolute}` : absolute}</span>;
+export function DateLine({ timestamp, className }: { timestamp: string; className?: string }) {
+  return (
+    <span className={cn("dateline", className)} title={formatAbsoluteTime(timestamp)}>
+      {formatRelativeTime(timestamp)}
+    </span>
+  );
 }
 
 export function CardNoImage({

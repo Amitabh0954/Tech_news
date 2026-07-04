@@ -106,6 +106,7 @@ class Settings(BaseSettings):
     hacker_news_base_url: str = "https://hacker-news.firebaseio.com/v0"
     hacker_news_story_limit: int = 20
     llm_relevance_enabled: bool = False
+    ingestion_interval_minutes: int = 7
 
     @property
     def normalized_database_url(self) -> str:

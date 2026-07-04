@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import type { Article } from "@/lib/api";
 import { ImpactBadge } from "@/components/ui/impact-badge";
+import { DateLine } from "@/components/news/article-primitives";
 
 export function StoryRow({ article }: { article: Article }) {
   return (
@@ -14,6 +15,9 @@ export function StoryRow({ article }: { article: Article }) {
           <ImpactBadge score={article.impact_score} urgency={article.urgency} />
           <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">
             {article.source.name}
+          </span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">
+            <DateLine timestamp={article.published_at} />
           </span>
         </div>
         <h3 className="font-heading text-2xl font-semibold leading-[1.18] tracking-[-0.05em] text-zinc-900 dark:text-white">

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import type { Article } from "@/lib/api";
 import { EditorialPhoto } from "@/components/news/editorial-photo";
+import { DateLine } from "@/components/news/article-primitives";
 
 export function FrontPageSecondary({
   article,
@@ -21,7 +22,9 @@ export function FrontPageSecondary({
           {article.title}
         </h2>
       </Link>
-      <div className="text-sm text-zinc-500 dark:text-slate-500">{new Date(article.published_at).toLocaleTimeString()}</div>
+      <div className="text-sm text-zinc-500 dark:text-slate-500">
+        <DateLine timestamp={article.published_at} />
+      </div>
     </article>
   );
 }

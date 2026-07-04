@@ -1,6 +1,7 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useAuthStore } from "@/stores/auth-store";
 
 const navItems = [
   { to: "/app", label: "Top Stories" },
@@ -11,6 +12,14 @@ const navItems = [
 ];
 
 export function TopHeader() {
+  const navigate = useNavigate();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-8">
@@ -59,6 +68,13 @@ export function TopHeader() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:border-rose-500/50 dark:hover:bg-rose-500/20"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, desc, func, or_, select
+from sqlalchemy import Select, delete, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -77,6 +77,41 @@ class NewsRepository:
             {"topic": "Kubernetes CVEs", "mentions": 9, "momentum": 8.3},
             {"topic": "TypeScript ecosystem", "mentions": 8, "momentum": 7.9},
         ]
+
+    async def suggest_articles(self, query: str, limit: int = 6) -> Sequence[Article]:
+        needle = f"%{query}%"
+        stmt = (
+            select(Article)
+            .options(joinedload(Article.category))
+            .where(or_(Article.title.ilike(needle), Article.excerpt.ilike(needle)))
+            .order_by(desc(Article.impact_score), desc(Article.published_at))
+            .limit(limit)
+        )
+        return (await self.db.execute(stmt)).scalars().unique().all()
+
+    async def count_articles(self) -> int:
+        return await self.db.scalar(select(func.count(Article.id))) or 0
+
+    async def delete_stale_articles(self, cutoff: datetime) -> int:
+        """Delete articles published before cutoff, skipping any that are bookmarked.
+
+        Dependent summary/impact rows have no cascade at the DB level, so they're
+        deleted explicitly first to avoid FK violations.
+        """
+        stale_ids_stmt = (
+            select(Article.id)
+            .where(Article.published_at < cutoff)
+            .where(~Article.id.in_(select(Bookmark.article_id)))
+        )
+        stale_ids = (await self.db.execute(stale_ids_stmt)).scalars().all()
+        if not stale_ids:
+            return 0
+
+        await self.db.execute(delete(Summary).where(Summary.article_id.in_(stale_ids)))
+        await self.db.execute(delete(ImpactScore).where(ImpactScore.article_id.in_(stale_ids)))
+        await self.db.execute(delete(Article).where(Article.id.in_(stale_ids)))
+        await self.db.commit()
+        return len(stale_ids)
 
     async def latest_ingested_at(self) -> datetime | None:
         return await self.db.scalar(select(func.max(Article.ingested_at)))

@@ -7,9 +7,13 @@ import { DateLine } from "@/components/news/article-primitives";
 export function FrontPageSecondary({
   article,
   eyebrow,
+  dense = false,
 }: {
   article: Article;
   eyebrow?: string;
+  /** Smaller heading for lower-priority thumbnails, so more of them fit in the
+      same column without each one competing for lead-story-level attention. */
+  dense?: boolean;
 }) {
   return (
     <article className="space-y-3 border-b border-border pb-6 last:border-b-0 dark:border-white/10">
@@ -22,7 +26,13 @@ export function FrontPageSecondary({
       <div className="min-w-0 space-y-2">
         <div className="text-sm text-zinc-600 dark:text-slate-400">{eyebrow ?? article.category?.name ?? "Top story"}</div>
         <Link to={`/app/article/${article.slug}`} className="block">
-          <h2 className="font-heading text-[2rem] font-semibold leading-[1.15] tracking-[-0.06em] text-zinc-900 dark:text-white">
+          <h2
+            className={
+              dense
+                ? "font-heading text-xl font-semibold leading-[1.2] tracking-[-0.04em] text-zinc-900 dark:text-white"
+                : "font-heading text-[2rem] font-semibold leading-[1.15] tracking-[-0.06em] text-zinc-900 dark:text-white"
+            }
+          >
             {article.title}
           </h2>
         </Link>

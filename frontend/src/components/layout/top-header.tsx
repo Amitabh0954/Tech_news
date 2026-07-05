@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useCategories } from "@/features/filters/queries";
+import { useSearchSuggestions } from "@/features/articles/queries";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUIStore } from "@/stores/ui-store";
 
@@ -13,8 +15,180 @@ const pageNavItems = [
 ];
 
 // Only the highest-traffic categories get a direct shortcut in the header;
-// the full category list always lives in the home page sidebar filter.
+// the rest are reachable through the "Filters" dropdown next to them.
 const FEATURED_CATEGORY_SLUGS = ["security", "ai"];
+
+function FilterDropdown({
+  categories,
+  activeCategory,
+  onSelect,
+}: {
+  categories: { id: string; name: string; slug: string }[];
+  activeCategory: string | null;
+  onSelect: (slug: string | null) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div
+      className="relative"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setIsOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className={`rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent/10 hover:text-accent ${
+          isOpen ? "bg-accent/10 text-accent" : "text-zinc-700 dark:text-slate-200"
+        }`}
+      >
+        Filters
+      </button>
+      {isOpen ? (
+        <div className="absolute right-0 top-[calc(100%+8px)] z-30 min-w-[200px] overflow-hidden rounded-2xl border border-black/10 bg-white/95 shadow-lg backdrop-blur dark:border-white/10 dark:bg-zinc-900/95">
+          <ul>
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelect(null);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent/10 ${
+                  activeCategory === null ? "text-accent" : "text-zinc-800 dark:text-slate-100"
+                }`}
+              >
+                All signal
+              </button>
+            </li>
+            {categories.map((category) => (
+              <li key={category.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelect(category.slug);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent/10 ${
+                    activeCategory === category.slug ? "text-accent" : "text-zinc-800 dark:text-slate-100"
+                  }`}
+                >
+                  {category.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SearchBar() {
+  const navigate = useNavigate();
+  const [input, setInput] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(input), 250);
+    return () => clearTimeout(timer);
+  }, [input]);
+
+  const { data: suggestions, isLoading } = useSearchSuggestions(debounced);
+  const showDropdown = isOpen && input.trim().length > 1;
+
+  const goToSearch = (query: string) => {
+    setIsOpen(false);
+    navigate(`/app/search?q=${encodeURIComponent(query)}`);
+  };
+
+  return (
+    <div
+      className="relative min-w-[220px] max-w-[320px] flex-1"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setIsOpen(false);
+        }
+      }}
+    >
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (input.trim().length > 1) {
+            goToSearch(input.trim());
+          }
+        }}
+      >
+        <label className="flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-4 py-2.5 text-sm text-zinc-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300">
+          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-zinc-500 dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <circle cx="11" cy="11" r="6" />
+            <path d="M20 20l-4.2-4.2" />
+          </svg>
+          <input
+            type="text"
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onFocus={() => setIsOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setIsOpen(false);
+                event.currentTarget.blur();
+              }
+            }}
+            placeholder="Search signals"
+            className="w-full bg-transparent outline-none placeholder:text-zinc-400 dark:placeholder:text-slate-500"
+          />
+        </label>
+      </form>
+
+      {showDropdown ? (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-black/10 bg-white/95 shadow-lg backdrop-blur dark:border-white/10 dark:bg-zinc-900/95">
+          {isLoading ? (
+            <div className="px-4 py-3 text-sm text-zinc-500 dark:text-slate-400">Searching…</div>
+          ) : suggestions?.length ? (
+            <ul>
+              {suggestions.map((suggestion) => (
+                <li key={suggestion.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false);
+                      setInput(suggestion.title);
+                      navigate(`/app/article/${suggestion.slug}`);
+                    }}
+                    className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left text-sm hover:bg-accent/10"
+                  >
+                    <span className="truncate text-zinc-800 dark:text-slate-100">{suggestion.title}</span>
+                    {suggestion.category ? (
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-500">
+                        {suggestion.category.name}
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              ))}
+              <li className="border-t border-black/10 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => goToSearch(input.trim())}
+                  className="w-full px-4 py-2.5 text-left text-sm font-medium text-accent hover:bg-accent/10"
+                >
+                  See all results for &ldquo;{input.trim()}&rdquo;
+                </button>
+              </li>
+            </ul>
+          ) : (
+            <div className="px-4 py-3 text-sm text-zinc-500 dark:text-slate-400">No matches yet</div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function TopHeader() {
   const navigate = useNavigate();
@@ -31,9 +205,9 @@ export function TopHeader() {
     navigate("/login", { replace: true });
   };
 
-  const handleCategoryClick = (slug: string) => {
+  const handleCategoryClick = (slug: string | null) => {
     setActiveCategory(slug);
-    navigate("/app");
+    navigate(slug ? `/app?category=${encodeURIComponent(slug)}` : "/app");
   };
 
   return (
@@ -54,17 +228,7 @@ export function TopHeader() {
         </Link>
 
         <div className="flex flex-1 flex-wrap items-center justify-end gap-3 lg:gap-4">
-          <label className="flex min-w-[220px] max-w-[320px] flex-1 items-center gap-2 rounded-full border border-black/10 bg-white/80 px-4 py-2.5 text-sm text-zinc-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300">
-            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-zinc-500 dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="11" cy="11" r="6" />
-              <path d="M20 20l-4.2-4.2" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search signals"
-              className="w-full bg-transparent outline-none placeholder:text-zinc-400 dark:placeholder:text-slate-500"
-            />
-          </label>
+          <SearchBar />
 
           <nav className="hidden items-center gap-2 text-sm font-medium text-zinc-700 md:flex dark:text-slate-200">
             <NavLink
@@ -91,6 +255,11 @@ export function TopHeader() {
                 {category.name}
               </button>
             ))}
+            <FilterDropdown
+              categories={(categories ?? []).filter((category) => !FEATURED_CATEGORY_SLUGS.includes(category.slug))}
+              activeCategory={activeCategory}
+              onSelect={handleCategoryClick}
+            />
             {pageNavItems.slice(1).map((item) => (
               <NavLink
                 key={item.to}

@@ -71,3 +71,14 @@ export function useSearchNews(query: string) {
     refetchOnWindowFocus: false,
   });
 }
+
+export function useSearchSuggestions(query: string) {
+  return useQuery({
+    queryKey: ["search-suggestions", query],
+    queryFn: () => api.getSearchSuggestions(query),
+    enabled: query.trim().length > 1,
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+  });
+}

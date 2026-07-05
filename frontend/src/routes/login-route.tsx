@@ -1,8 +1,85 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
+type GoogleCredentialResponse = { credential: string };
+
+// Google Identity Services attaches itself to window.google once its script loads —
+// there's no npm package for this, so it's typed loosely here rather than pulling in
+// a whole @types package for one callback shape.
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: { client_id: string; callback: (response: GoogleCredentialResponse) => void }) => void;
+          renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
+        };
+      };
+    };
+  }
+}
+
+function GoogleSignInButton({ onCredential }: { onCredential: (credential: string) => void }) {
+  const buttonRef = useRef<HTMLDivElement | null>(null);
+  // Every keystroke in the login form re-renders LoginRoute, which would otherwise
+  // hand this effect a new onCredential reference and re-run the script/render setup
+  // on every keystroke. A ref keeps the effect mount-only while still calling latest.
+  const onCredentialRef = useRef(onCredential);
+  onCredentialRef.current = onCredential;
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !buttonRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const render = () => {
+      if (cancelled || !window.google || !buttonRef.current) {
+        return;
+      }
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response) => onCredentialRef.current(response.credential),
+      });
+      window.google.accounts.id.renderButton(buttonRef.current, {
+        theme: "outline",
+        size: "large",
+        width: 320,
+      });
+    };
+
+    if (window.google) {
+      render();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = render;
+    document.head.appendChild(script);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!GOOGLE_CLIENT_ID) {
+    return (
+      <div className="rounded-full border border-dashed border-border px-4 py-2.5 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-slate-500">
+        Google sign-in isn&apos;t configured yet
+      </div>
+    );
+  }
+
+  return <div ref={buttonRef} className="flex justify-center" />;
+}
 
 export function LoginRoute() {
   const navigate = useNavigate();
@@ -31,6 +108,17 @@ export function LoginRoute() {
       setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential: string) => {
+    setError(null);
+    try {
+      const authResponse = await api.auth.google(credential);
+      setAuth(authResponse.user, authResponse.access_token);
+      navigate("/app");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
     }
   };
 
@@ -134,6 +222,14 @@ export function LoginRoute() {
                 {loading ? "Working..." : mode === "signup" ? "Create account" : "Sign in"}
               </button>
             </form>
+
+            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-zinc-400 dark:text-slate-600">
+              <div className="h-px flex-1 bg-border dark:bg-white/10" />
+              or
+              <div className="h-px flex-1 bg-border dark:bg-white/10" />
+            </div>
+
+            <GoogleSignInButton onCredential={(credential) => void handleGoogleCredential(credential)} />
 
             <div className="mt-5 flex items-center justify-between text-sm text-zinc-600 dark:text-slate-400">
               <span>{mode === "signup" ? "Already have an account?" : "Need an account?"}</span>

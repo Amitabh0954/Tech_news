@@ -1,13 +1,26 @@
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+
 import { CriticalAlertStrip } from "@/components/news/critical-alert-strip";
 import { FrontPageLead } from "@/components/news/front-page-lead";
 import { FrontPageSecondary } from "@/components/news/front-page-secondary";
 import { NewsRiver } from "@/components/news/news-river";
+import { StoryRow } from "@/components/news/story-row";
 import { useCriticalStories, useNewsFeed } from "@/features/articles/queries";
 import { useUIStore } from "@/stores/ui-store";
 
 export function HomeRoute() {
   const { data: criticalStories } = useCriticalStories();
-  const { activeCategory } = useUIStore();
+  // The category filter lives in the URL (not just the store) so the browser's
+  // back/forward buttons actually move between filtered views instead of no-oping.
+  const [searchParams] = useSearchParams();
+  const activeCategory = searchParams.get("category");
+  const setActiveCategory = useUIStore((state) => state.setActiveCategory);
+
+  useEffect(() => {
+    setActiveCategory(activeCategory);
+  }, [activeCategory, setActiveCategory]);
+
   const { data: newsFeed, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useNewsFeed(activeCategory);
 
@@ -18,10 +31,20 @@ export function HomeRoute() {
   // whichever happened to publish last — a 9.4 from two hours ago should lead
   // over a 5.8 from ten minutes ago.
   const RECENCY_WINDOW = 10;
+  // Slice(1, 5) instead of (1, 3): the right rail had visible empty space below the
+  // first two thumbnails, so this surfaces two more high-impact stories to fill it.
   const featuredCandidates = [...items.slice(0, RECENCY_WINDOW)].sort((a, b) => b.impact_score - a.impact_score);
   const leadStory = featuredCandidates[0] ?? items[0];
-  const secondaryStories = featuredCandidates.slice(1, 3);
-  const featuredIds = new Set([leadStory?.id, ...secondaryStories.map((story) => story.id)].filter(Boolean));
+  const secondaryStories = featuredCandidates.slice(1, 5);
+  // The secondary rail (4 thumbnails) runs taller than a lone lead story, which left
+  // dead space under the lead. These fill that space with a few more high-impact
+  // stories in a compact row style so both columns land at roughly the same height.
+  const leadFillerStories = featuredCandidates.slice(5, 8);
+  const featuredIds = new Set(
+    [leadStory?.id, ...secondaryStories.map((story) => story.id), ...leadFillerStories.map((story) => story.id)].filter(
+      Boolean,
+    ),
+  );
   const riverStories = items.filter((item) => !featuredIds.has(item.id));
 
   return (
@@ -56,13 +79,23 @@ export function HomeRoute() {
       ) : leadStory ? (
         <div className="space-y-10">
           <section className="grid gap-8 xl:grid-cols-[minmax(0,1.8fr)_380px]">
-            <FrontPageLead article={leadStory} />
+            <div>
+              <FrontPageLead article={leadStory} />
+              {leadFillerStories.length ? (
+                <div className="mt-6 border-t border-border pt-2 dark:border-white/10">
+                  {leadFillerStories.map((article) => (
+                    <StoryRow key={article.id} article={article} />
+                  ))}
+                </div>
+              ) : null}
+            </div>
             <div className="space-y-6 border-l border-border pl-0 xl:pl-8 dark:border-white/10">
               {secondaryStories.map((article, index) => (
                 <FrontPageSecondary
                   key={article.id}
                   article={article}
-                  eyebrow={index === 0 ? "World at work" : "Cloud & infrastructure"}
+                  eyebrow={index === 0 ? "World at work" : index === 1 ? "Cloud & infrastructure" : undefined}
+                  dense={index >= 2}
                 />
               ))}
             </div>

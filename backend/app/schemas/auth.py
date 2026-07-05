@@ -12,6 +12,12 @@ class RegisterRequest(BaseModel):
     display_name: str
 
 
+class GoogleAuthRequest(BaseModel):
+    # The Google Identity Services button hands back an ID token JWT in a field
+    # named "credential" — kept as-is here so the frontend can forward it untouched.
+    credential: str
+
+
 class UserRead(BaseModel):
     id: str
     email: EmailStr

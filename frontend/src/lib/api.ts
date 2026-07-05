@@ -86,6 +86,14 @@ export type TrendingTopic = {
   momentum: number;
 };
 
+export type ArticleSuggestion = {
+  id: string;
+  title: string;
+  slug: string;
+  category?: Category | null;
+  urgency: string;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
 
@@ -147,6 +155,12 @@ export const api = {
       request<AuthUser>("/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       }),
+    google: (credential: string) =>
+      request<AuthResponse>("/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential }),
+      }),
   },
   getNews: (page = 1, pageSize = 8, category?: string | null) =>
     request<PaginatedArticles>(
@@ -158,6 +172,8 @@ export const api = {
   getArticle: (slug: string) => request<Article>(`/news/${slug}`),
   searchNews: (query: string, page = 1, pageSize = 12) =>
     request<PaginatedArticles>(`/search?q=${encodeURIComponent(query)}&page=${page}&page_size=${pageSize}`),
+  getSearchSuggestions: (query: string, limit = 6) =>
+    request<ArticleSuggestion[]>(`/search/suggestions?q=${encodeURIComponent(query)}&limit=${limit}`),
   getBookmarks: () => request<Article[]>("/bookmarks", { headers: authHeaders() }),
   addBookmark: (articleId: string) =>
     request<{ status: string }>("/bookmarks", {

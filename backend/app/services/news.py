@@ -1,7 +1,7 @@
 import logging
 
 from app.repositories.news import NewsRepository, TaxonomyRepository
-from app.schemas.news import PaginatedArticles
+from app.schemas.news import ArticleSuggestion, PaginatedArticles
 from app.services.demo_data import DEMO_CATEGORIES, DEMO_SOURCES, get_demo_article, get_demo_feed
 from app.workers.ingestion_worker import run_ingestion_cycle
 
@@ -76,6 +76,32 @@ class NewsService:
 
         next_cursor = str(page + 1) if offset + page_size < total else None
         return PaginatedArticles(items=list(rows), total=total, next_cursor=next_cursor)
+
+    async def suggest(self, query: str, limit: int = 6) -> list[ArticleSuggestion]:
+        try:
+            rows = await self.repository.suggest_articles(query, limit=limit)
+        except Exception:
+            logger.exception("failed to read search suggestions from the database")
+            rows = []
+
+        if not rows:
+            needle = query.lower()
+            rows = [
+                article
+                for article in get_demo_feed().items
+                if needle in article.title.lower() or (article.excerpt and needle in article.excerpt.lower())
+            ][:limit]
+
+        return [
+            ArticleSuggestion(
+                id=article.id,
+                title=article.title,
+                slug=article.slug,
+                category=article.category,
+                urgency=article.urgency,
+            )
+            for article in rows
+        ]
 
     async def get_article(self, slug: str):
         try:

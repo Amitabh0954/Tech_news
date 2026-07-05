@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.router import api_router
 from app.core.config import settings
 from app.workers.ingestion_worker import run_ingestion_cycle
+from app.workers.retention_worker import run_retention_cleanup
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,18 @@ async def lifespan(app: FastAPI):
         coalesce=True,
         misfire_grace_time=60,
     )
+    scheduler.add_job(
+        run_retention_cleanup,
+        trigger="interval",
+        hours=settings.retention_cleanup_interval_hours,
+        id="retention_cleanup",
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+    )
     scheduler.start()
     logger.info("ingestion scheduler started: every %d minutes", settings.ingestion_interval_minutes)
+    logger.info("retention cleanup scheduler started: every %d hours", settings.retention_cleanup_interval_hours)
 
     # Warm the cache once on boot without blocking startup or user requests on it.
     asyncio.create_task(run_ingestion_cycle())

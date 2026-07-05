@@ -68,6 +68,14 @@ class ArticleDetail(ArticleListItem):
     related_story_ids: list[UUID] = Field(default_factory=list)
 
 
+class ArticleSuggestion(APIModel):
+    id: UUID
+    title: str
+    slug: str
+    category: CategoryRead | None = None
+    urgency: str
+
+
 class PaginatedArticles(BaseModel):
     items: list[ArticleListItem]
     next_cursor: str | None = None

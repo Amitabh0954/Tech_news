@@ -12,7 +12,6 @@ from slugify import slugify
 
 from app.core.config import settings
 
-
 _SKIP_IMAGE_HINTS = ("avatar", "gravatar", "spacer", "pixel", "tracking", "1x1", "icon-", "favicon", "badge")
 
 

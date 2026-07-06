@@ -18,6 +18,15 @@ class GoogleAuthRequest(BaseModel):
     credential: str
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+
 class UserRead(BaseModel):
     id: str
     email: EmailStr

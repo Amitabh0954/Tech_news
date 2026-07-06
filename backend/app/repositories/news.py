@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, delete, desc, func, or_, select
+from sqlalchemy import Select, delete, desc, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -70,12 +70,41 @@ class NewsRepository:
         )
         return (await self.db.execute(stmt)).scalars().unique().all()
 
-    async def list_trending_topics(self) -> list[dict[str, str | int | float]]:
+    async def list_trending_topics(
+        self, *, window_hours: int = 48, limit: int = 12
+    ) -> list[dict[str, str | int | float]]:
+        """Aggregate ecosystem tags (stored per-article in metadata->'ecosystem_tags')
+        over a rolling window. Momentum is the share of a tag's mentions that fell in
+        the more recent half of the window, scaled to 0-10 — a tag mentioned only in
+        the last N/2 hours scores near 10, one that's cooled off scores near 0.
+        """
+        now = datetime.now(UTC)
+        window_start = now - timedelta(hours=window_hours)
+        midpoint = now - timedelta(hours=window_hours / 2)
+
+        stmt = text(
+            """
+            SELECT tag AS topic,
+                   COUNT(*) AS mentions,
+                   COUNT(*) FILTER (WHERE published_at >= :midpoint) AS recent_mentions
+            FROM articles,
+                 LATERAL jsonb_array_elements_text(metadata -> 'ecosystem_tags') AS tag
+            WHERE published_at >= :window_start
+            GROUP BY tag
+            ORDER BY mentions DESC, recent_mentions DESC
+            LIMIT :limit
+            """
+        )
+        rows = (
+            await self.db.execute(stmt, {"window_start": window_start, "midpoint": midpoint, "limit": limit})
+        ).all()
         return [
-            {"topic": "GitHub Actions security", "mentions": 14, "momentum": 9.2},
-            {"topic": "Gemma 4 inference", "mentions": 11, "momentum": 8.7},
-            {"topic": "Kubernetes CVEs", "mentions": 9, "momentum": 8.3},
-            {"topic": "TypeScript ecosystem", "mentions": 8, "momentum": 7.9},
+            {
+                "topic": row.topic,
+                "mentions": row.mentions,
+                "momentum": round((row.recent_mentions / row.mentions) * 10, 1) if row.mentions else 0.0,
+            }
+            for row in rows
         ]
 
     async def suggest_articles(self, query: str, limit: int = 6) -> Sequence[Article]:
@@ -126,7 +155,12 @@ class NewsRepository:
 
         return latest < datetime.now(UTC) - timedelta(minutes=ttl_minutes)
 
-    async def upsert_articles(self, articles: Sequence[ArticleDetail]) -> None:
+    async def upsert_articles(self, articles: Sequence[ArticleDetail]) -> int:
+        """Insert/update the given articles, returning how many were newly created
+        (as opposed to updates to articles already on file) so callers can decide
+        whether it's worth notifying live clients.
+        """
+        new_count = 0
         for article in articles:
             source = await self.db.scalar(select(Source).where(Source.slug == article.source.slug))
             if source is None:
@@ -187,6 +221,7 @@ class NewsRepository:
                 )
                 self.db.add(existing)
                 await self.db.flush()
+                new_count += 1
             else:
                 existing.title = article.title
                 existing.slug = article.slug
@@ -257,6 +292,7 @@ class NewsRepository:
                     impact.affected_roles = article.impact.affected_roles
 
         await self.db.commit()
+        return new_count
 
 
 class TaxonomyRepository:

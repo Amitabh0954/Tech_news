@@ -2,7 +2,7 @@ import logging
 
 from app.repositories.news import NewsRepository, TaxonomyRepository
 from app.schemas.news import ArticleSuggestion, PaginatedArticles
-from app.services.demo_data import DEMO_CATEGORIES, DEMO_SOURCES, get_demo_article, get_demo_feed
+from app.services.demo_data import DEMO_CATEGORIES, DEMO_SOURCES, DEMO_TRENDING, get_demo_article, get_demo_feed
 from app.workers.ingestion_worker import run_ingestion_cycle
 
 logger = logging.getLogger(__name__)
@@ -120,7 +120,12 @@ class NewsService:
         return rows or [article for article in get_demo_feed().items if article.urgency == "critical"]
 
     async def list_trending(self):
-        return await self.repository.list_trending_topics()
+        try:
+            topics = await self.repository.list_trending_topics()
+        except Exception:
+            logger.exception("failed to compute trending topics from the database")
+            return DEMO_TRENDING
+        return topics or DEMO_TRENDING
 
 
 class TaxonomyService:

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,6 +25,19 @@ class User(TimestampMixin, Base):
     theme: Mapped[str] = mapped_column(String(20), default="dark")
 
     bookmarks: Mapped[list["Bookmark"]] = relationship(back_populates="user")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    # Only a hash of the token is stored — the raw token only ever exists in the
+    # (out-of-band) reset link, so a DB read alone can't be used to reset a password.
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
 
 class Source(TimestampMixin, Base):
@@ -131,7 +144,9 @@ class ImpactScore(TimestampMixin, Base):
 
 class Bookmark(Base):
     __tablename__ = "bookmarks"
-    __table_args__ = (UniqueConstraint("user_id", "article_id", name="uq_bookmarks_user_article"),)
+    # No separate UniqueConstraint here: it would cover the exact same two columns as
+    # the composite primary key below, which is already unique — a redundant
+    # same-column UniqueConstraint just collides names with the PK in Postgres.
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
     article_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("articles.id"), primary_key=True)

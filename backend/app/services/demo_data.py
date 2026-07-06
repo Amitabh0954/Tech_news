@@ -3,7 +3,6 @@ from uuid import uuid4
 
 from app.schemas.news import (
     ArticleDetail,
-    ArticleListItem,
     CategoryRead,
     ImpactScoreRead,
     PaginatedArticles,
@@ -35,6 +34,13 @@ DEMO_SOURCES = [
     _source("OpenAI", "openai", "company_blog", "https://openai.com", 9.4),
     _source("Kubernetes Blog", "kubernetes", "engineering_blog", "https://kubernetes.io/blog", 9.1),
     _source("AWS Health", "aws-health", "status", "https://health.aws.amazon.com", 9.2),
+]
+
+DEMO_TRENDING = [
+    {"topic": "GitHub Actions security", "mentions": 14, "momentum": 9.2},
+    {"topic": "Gemma 4 inference", "mentions": 11, "momentum": 8.7},
+    {"topic": "Kubernetes CVEs", "mentions": 9, "momentum": 8.3},
+    {"topic": "TypeScript ecosystem", "mentions": 8, "momentum": 7.9},
 ]
 
 DEMO_CATEGORIES = [

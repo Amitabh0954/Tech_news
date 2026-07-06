@@ -10,10 +10,10 @@ from app.api.routes import (
     news,
     search,
     sources,
+    stream,
     summaries,
     trending,
 )
-
 
 api_router = APIRouter()
 api_router.include_router(auth.router, tags=["auth"])
@@ -27,3 +27,4 @@ api_router.include_router(sources.router, tags=["sources"])
 api_router.include_router(summaries.router, tags=["summaries"])
 api_router.include_router(ingestion.router, tags=["ingestion"])
 api_router.include_router(architecture.router, tags=["architecture"])
+api_router.include_router(stream.router, tags=["stream"])

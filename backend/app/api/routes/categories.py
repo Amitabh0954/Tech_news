@@ -4,7 +4,6 @@ from app.api.deps import get_taxonomy_service
 from app.schemas.news import CategoryRead
 from app.services.news import TaxonomyService
 
-
 router = APIRouter(prefix="/categories")
 
 

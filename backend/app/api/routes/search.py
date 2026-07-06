@@ -4,7 +4,6 @@ from app.api.deps import get_news_service
 from app.schemas.news import ArticleSuggestion, PaginatedArticles
 from app.services.news import NewsService
 
-
 router = APIRouter(prefix="/search")
 
 

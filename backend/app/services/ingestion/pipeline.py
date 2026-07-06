@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.schemas.news import ArticleDetail
 from app.services.images import generate_story_image_data_uri, select_local_story_image
 from app.services.ingestion.orchestrator import IngestionOrchestrator
-from app.services.ingestion.providers import GitHubProvider, HackerNewsProvider, RSSProvider, RedditProvider
+from app.services.ingestion.providers import GitHubProvider, HackerNewsProvider, RedditProvider, RSSProvider
 from app.services.ingestion.scoring import (
     LIVE_CATEGORIES,
     NAMESPACE,

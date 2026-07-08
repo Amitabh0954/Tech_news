@@ -1,8 +1,8 @@
 import logging
 
 from app.repositories.news import NewsRepository, TaxonomyRepository
-from app.schemas.news import PaginatedArticles
-from app.services.demo_data import DEMO_CATEGORIES, DEMO_SOURCES, get_demo_article, get_demo_feed
+from app.schemas.news import ArticleSuggestion, PaginatedArticles
+from app.services.demo_data import DEMO_CATEGORIES, DEMO_SOURCES, DEMO_TRENDING, get_demo_article, get_demo_feed
 from app.workers.ingestion_worker import run_ingestion_cycle
 
 logger = logging.getLogger(__name__)
@@ -26,12 +26,15 @@ class NewsService:
         category: str | None = None,
         urgency: str | None = None,
         query: str | None = None,
+        source_type: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedArticles:
         items = get_demo_feed().items
         if category:
             items = [item for item in items if item.category and item.category.slug == category]
+        if source_type:
+            items = [item for item in items if item.source.source_type == source_type]
         if urgency:
             items = [item for item in items if item.urgency == urgency]
         if query:
@@ -54,6 +57,7 @@ class NewsService:
         category: str | None = None,
         urgency: str | None = None,
         query: str | None = None,
+        source_type: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedArticles:
@@ -63,19 +67,50 @@ class NewsService:
                 category=category,
                 urgency=urgency,
                 query=query,
+                source_type=source_type,
                 limit=page_size,
                 offset=offset,
             )
         except Exception:
             logger.exception("failed to read articles from the database, serving static demo feed")
-            return self._demo_feed(category=category, urgency=urgency, query=query, page=page, page_size=page_size)
+            return self._demo_feed(
+                category=category, urgency=urgency, query=query, source_type=source_type, page=page, page_size=page_size
+            )
 
         if not rows:
             logger.info("no cached articles yet for this filter, serving static demo feed while ingestion catches up")
-            return self._demo_feed(category=category, urgency=urgency, query=query, page=page, page_size=page_size)
+            return self._demo_feed(
+                category=category, urgency=urgency, query=query, source_type=source_type, page=page, page_size=page_size
+            )
 
         next_cursor = str(page + 1) if offset + page_size < total else None
         return PaginatedArticles(items=list(rows), total=total, next_cursor=next_cursor)
+
+    async def suggest(self, query: str, limit: int = 6) -> list[ArticleSuggestion]:
+        try:
+            rows = await self.repository.suggest_articles(query, limit=limit)
+        except Exception:
+            logger.exception("failed to read search suggestions from the database")
+            rows = []
+
+        if not rows:
+            needle = query.lower()
+            rows = [
+                article
+                for article in get_demo_feed().items
+                if needle in article.title.lower() or (article.excerpt and needle in article.excerpt.lower())
+            ][:limit]
+
+        return [
+            ArticleSuggestion(
+                id=article.id,
+                title=article.title,
+                slug=article.slug,
+                category=article.category,
+                urgency=article.urgency,
+            )
+            for article in rows
+        ]
 
     async def get_article(self, slug: str):
         try:
@@ -94,7 +129,12 @@ class NewsService:
         return rows or [article for article in get_demo_feed().items if article.urgency == "critical"]
 
     async def list_trending(self):
-        return await self.repository.list_trending_topics()
+        try:
+            topics = await self.repository.list_trending_topics()
+        except Exception:
+            logger.exception("failed to compute trending topics from the database")
+            return DEMO_TRENDING
+        return topics or DEMO_TRENDING
 
 
 class TaxonomyService:

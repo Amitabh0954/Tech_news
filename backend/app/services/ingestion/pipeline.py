@@ -9,7 +9,13 @@ from app.core.config import settings
 from app.schemas.news import ArticleDetail
 from app.services.images import generate_story_image_data_uri, select_local_story_image
 from app.services.ingestion.orchestrator import IngestionOrchestrator
-from app.services.ingestion.providers import GitHubProvider, HackerNewsProvider, RSSProvider, RedditProvider
+from app.services.ingestion.providers import (
+    GitHubProvider,
+    HackerNewsProvider,
+    HuggingFacePapersProvider,
+    RedditProvider,
+    RSSProvider,
+)
 from app.services.ingestion.scoring import (
     LIVE_CATEGORIES,
     NAMESPACE,
@@ -23,7 +29,13 @@ from app.services.ranking import EngineeringSignalRanker
 
 logger = logging.getLogger(__name__)
 
-SOURCE_TYPE_LIMITS: dict[str, int] = {"rss": 32, "youtube": 8, "hacker-news": 12, "github": 8, "reddit": 5}
+SOURCE_TYPE_LIMITS: dict[str, int] = {
+    "rss": 32,
+    "hacker-news": 12,
+    "github": 8,
+    "reddit": 5,
+    "paper": 45,
+}
 
 
 class IngestionPipeline:
@@ -37,7 +49,14 @@ class IngestionPipeline:
     def __init__(self) -> None:
         self.ranker = EngineeringSignalRanker()
         self.orchestrator = IngestionOrchestrator(
-            [RSSProvider(), HackerNewsProvider(), GitHubProvider(), RedditProvider()]
+            [
+                RSSProvider(),
+                RSSProvider(settings.arxiv_feed_urls, source_type_override="paper", source_name_override="arXiv"),
+                HuggingFacePapersProvider(),
+                HackerNewsProvider(),
+                GitHubProvider(),
+                RedditProvider(),
+            ]
         )
 
     async def run(self) -> list[ArticleDetail]:
@@ -74,8 +93,14 @@ class IngestionPipeline:
             )
 
             ranked = self.ranker.rank(title, excerpt, item.get("tags", []), source.name)
+            # Papers are curated by feed choice rather than by keyword relevance — the
+            # ranker's keep-gate is tuned for "production engineering" signal terms and
+            # would silently drop most paper abstracts that don't happen to contain them.
+            is_curated_source = source_type == "paper"
             if not ranked.keep:
-                continue
+                if not is_curated_source:
+                    continue
+                ranked.why_this_matters = "Recent paper surfaced for the Papers tab."
 
             seen_titles.add(title_key)
             source_type_counts[source_type] = source_type_counts.get(source_type, 0) + 1

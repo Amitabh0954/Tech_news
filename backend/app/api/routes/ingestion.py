@@ -2,9 +2,8 @@ from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_news_service
 from app.schemas.ingestion import IngestedStory
-from app.services.news import NewsService
 from app.services.ingestion.providers import HackerNewsProvider
-
+from app.services.news import NewsService
 
 router = APIRouter(prefix="/ingestion")
 

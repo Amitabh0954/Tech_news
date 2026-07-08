@@ -1,13 +1,17 @@
+import hashlib
+import logging
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, desc, func, or_, select
+from sqlalchemy import Select, delete, desc, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.models.news import Article, Bookmark, Category, ImpactScore, Source, Summary
 from app.schemas.news import ArticleDetail
+
+logger = logging.getLogger(__name__)
 
 
 class NewsRepository:
@@ -32,6 +36,7 @@ class NewsRepository:
         category: str | None = None,
         urgency: str | None = None,
         query: str | None = None,
+        source_type: str | None = None,
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[Sequence[Article], int]:
@@ -41,6 +46,11 @@ class NewsRepository:
         if category:
             stmt = stmt.join(Category).where(Category.slug == category)
             count_stmt = count_stmt.join(Category).where(Category.slug == category)
+        if source_type:
+            stmt = stmt.join(Source, Source.id == Article.source_id).where(Source.source_type == source_type)
+            count_stmt = count_stmt.join(Source, Source.id == Article.source_id).where(
+                Source.source_type == source_type
+            )
         if urgency:
             stmt = stmt.where(Article.urgency == urgency)
             count_stmt = count_stmt.where(Article.urgency == urgency)
@@ -70,13 +80,77 @@ class NewsRepository:
         )
         return (await self.db.execute(stmt)).scalars().unique().all()
 
-    async def list_trending_topics(self) -> list[dict[str, str | int | float]]:
+    async def list_trending_topics(
+        self, *, window_hours: int = 48, limit: int = 12
+    ) -> list[dict[str, str | int | float]]:
+        """Aggregate ecosystem tags (stored per-article in metadata->'ecosystem_tags')
+        over a rolling window. Momentum is the share of a tag's mentions that fell in
+        the more recent half of the window, scaled to 0-10 — a tag mentioned only in
+        the last N/2 hours scores near 10, one that's cooled off scores near 0.
+        """
+        now = datetime.now(UTC)
+        window_start = now - timedelta(hours=window_hours)
+        midpoint = now - timedelta(hours=window_hours / 2)
+
+        stmt = text(
+            """
+            SELECT tag AS topic,
+                   COUNT(*) AS mentions,
+                   COUNT(*) FILTER (WHERE published_at >= :midpoint) AS recent_mentions
+            FROM articles,
+                 LATERAL jsonb_array_elements_text(metadata -> 'ecosystem_tags') AS tag
+            WHERE published_at >= :window_start
+            GROUP BY tag
+            ORDER BY mentions DESC, recent_mentions DESC
+            LIMIT :limit
+            """
+        )
+        rows = (
+            await self.db.execute(stmt, {"window_start": window_start, "midpoint": midpoint, "limit": limit})
+        ).all()
         return [
-            {"topic": "GitHub Actions security", "mentions": 14, "momentum": 9.2},
-            {"topic": "Gemma 4 inference", "mentions": 11, "momentum": 8.7},
-            {"topic": "Kubernetes CVEs", "mentions": 9, "momentum": 8.3},
-            {"topic": "TypeScript ecosystem", "mentions": 8, "momentum": 7.9},
+            {
+                "topic": row.topic,
+                "mentions": row.mentions,
+                "momentum": round((row.recent_mentions / row.mentions) * 10, 1) if row.mentions else 0.0,
+            }
+            for row in rows
         ]
+
+    async def suggest_articles(self, query: str, limit: int = 6) -> Sequence[Article]:
+        needle = f"%{query}%"
+        stmt = (
+            select(Article)
+            .options(joinedload(Article.category))
+            .where(or_(Article.title.ilike(needle), Article.excerpt.ilike(needle)))
+            .order_by(desc(Article.impact_score), desc(Article.published_at))
+            .limit(limit)
+        )
+        return (await self.db.execute(stmt)).scalars().unique().all()
+
+    async def count_articles(self) -> int:
+        return await self.db.scalar(select(func.count(Article.id))) or 0
+
+    async def delete_stale_articles(self, cutoff: datetime) -> int:
+        """Delete articles published before cutoff, skipping any that are bookmarked.
+
+        Dependent summary/impact rows have no cascade at the DB level, so they're
+        deleted explicitly first to avoid FK violations.
+        """
+        stale_ids_stmt = (
+            select(Article.id)
+            .where(Article.published_at < cutoff)
+            .where(~Article.id.in_(select(Bookmark.article_id)))
+        )
+        stale_ids = (await self.db.execute(stale_ids_stmt)).scalars().all()
+        if not stale_ids:
+            return 0
+
+        await self.db.execute(delete(Summary).where(Summary.article_id.in_(stale_ids)))
+        await self.db.execute(delete(ImpactScore).where(ImpactScore.article_id.in_(stale_ids)))
+        await self.db.execute(delete(Article).where(Article.id.in_(stale_ids)))
+        await self.db.commit()
+        return len(stale_ids)
 
     async def latest_ingested_at(self) -> datetime | None:
         return await self.db.scalar(select(func.max(Article.ingested_at)))
@@ -91,137 +165,172 @@ class NewsRepository:
 
         return latest < datetime.now(UTC) - timedelta(minutes=ttl_minutes)
 
-    async def upsert_articles(self, articles: Sequence[ArticleDetail]) -> None:
+    async def upsert_articles(self, articles: Sequence[ArticleDetail]) -> int:
+        """Insert/update the given articles, returning how many were newly created
+        (as opposed to updates to articles already on file) so callers can decide
+        whether it's worth notifying live clients.
+
+        Commits once per article rather than once for the whole batch: different
+        sources (e.g. arXiv and Hugging Face both surfacing the same paper) can
+        legitimately slugify to the same title, and a single unique-constraint
+        violation deep in a shared transaction used to silently roll back every
+        other article already staged in that same ingestion cycle.
+        """
+        new_count = 0
         for article in articles:
-            source = await self.db.scalar(select(Source).where(Source.slug == article.source.slug))
-            if source is None:
-                source = Source(
-                    id=article.source.id,
-                    name=article.source.name,
-                    slug=article.source.slug,
-                    source_type=article.source.source_type,
-                    homepage_url=article.source.homepage_url,
-                    trust_score=float(article.source.trust_score),
-                    is_active=True,
+            try:
+                created = await self._upsert_one(article)
+                await self.db.commit()
+                if created:
+                    new_count += 1
+            except Exception:
+                await self.db.rollback()
+                logger.exception("failed to upsert article %s, skipping", article.canonical_url)
+        return new_count
+
+    async def _resolve_unique_slug(self, slug: str, canonical_url: str) -> str:
+        conflict = await self.db.scalar(
+            select(Article.id).where(Article.slug == slug, Article.canonical_url != canonical_url)
+        )
+        if conflict is None:
+            return slug
+        suffix = hashlib.sha1(canonical_url.encode("utf-8")).hexdigest()[:6]
+        return f"{slug}-{suffix}"[:255]
+
+    async def _upsert_one(self, article: ArticleDetail) -> bool:
+        """Returns True if this created a new row, False if it updated an existing one."""
+        source = await self.db.scalar(select(Source).where(Source.slug == article.source.slug))
+        if source is None:
+            source = Source(
+                id=article.source.id,
+                name=article.source.name,
+                slug=article.source.slug,
+                source_type=article.source.source_type,
+                homepage_url=article.source.homepage_url,
+                trust_score=float(article.source.trust_score),
+                is_active=True,
+            )
+            self.db.add(source)
+            await self.db.flush()
+        else:
+            source.name = article.source.name
+            source.source_type = article.source.source_type
+            source.homepage_url = article.source.homepage_url
+            source.trust_score = float(article.source.trust_score)
+
+        category = None
+        if article.category:
+            category = await self.db.scalar(select(Category).where(Category.slug == article.category.slug))
+            if category is None:
+                category = Category(
+                    id=article.category.id,
+                    name=article.category.name,
+                    slug=article.category.slug,
+                    description=article.category.description,
                 )
-                self.db.add(source)
+                self.db.add(category)
                 await self.db.flush()
             else:
-                source.name = article.source.name
-                source.source_type = article.source.source_type
-                source.homepage_url = article.source.homepage_url
-                source.trust_score = float(article.source.trust_score)
+                category.name = article.category.name
+                category.description = article.category.description
 
-            category = None
-            if article.category:
-                category = await self.db.scalar(select(Category).where(Category.slug == article.category.slug))
-                if category is None:
-                    category = Category(
-                        id=article.category.id,
-                        name=article.category.name,
-                        slug=article.category.slug,
-                        description=article.category.description,
-                    )
-                    self.db.add(category)
-                    await self.db.flush()
-                else:
-                    category.name = article.category.name
-                    category.description = article.category.description
+        existing = await self.db.scalar(select(Article).where(Article.canonical_url == article.canonical_url))
+        slug = await self._resolve_unique_slug(article.slug, article.canonical_url)
+        if existing is None:
+            existing = Article(
+                id=article.id,
+                source_id=source.id,
+                category_id=category.id if category else None,
+                title=article.title,
+                slug=slug,
+                canonical_url=article.canonical_url,
+                author=None,
+                excerpt=article.excerpt,
+                content=article.content,
+                image_url=article.image_url,
+                discussion_url=article.discussion_url,
+                normalized_url=article.canonical_url,
+                dedupe_key=str(article.id),
+                urgency=article.urgency,
+                impact_score=float(article.impact_score),
+                published_at=article.published_at,
+                ingested_at=datetime.now(UTC),
+                metadata_json={"ecosystem_tags": article.ecosystem_tags},
+            )
+            self.db.add(existing)
+            await self.db.flush()
+            created = True
+        else:
+            created = False
+            existing.title = article.title
+            existing.slug = slug
+            existing.excerpt = article.excerpt
+            existing.content = article.content
+            existing.image_url = article.image_url
+            existing.discussion_url = article.discussion_url
+            existing.urgency = article.urgency
+            existing.impact_score = float(article.impact_score)
+            existing.published_at = article.published_at
+            existing.ingested_at = datetime.now(UTC)
+            existing.source_id = source.id
+            existing.category_id = category.id if category else None
+            existing.metadata_json = {"ecosystem_tags": article.ecosystem_tags}
 
-            existing = await self.db.scalar(select(Article).where(Article.canonical_url == article.canonical_url))
-            if existing is None:
-                existing = Article(
-                    id=article.id,
-                    source_id=source.id,
-                    category_id=category.id if category else None,
-                    title=article.title,
-                    slug=article.slug,
-                    canonical_url=article.canonical_url,
-                    author=None,
-                    excerpt=article.excerpt,
-                    content=article.content,
-                    image_url=article.image_url,
-                    discussion_url=article.discussion_url,
-                    normalized_url=article.canonical_url,
-                    dedupe_key=str(article.id),
-                    urgency=article.urgency,
-                    impact_score=float(article.impact_score),
-                    published_at=article.published_at,
-                    ingested_at=datetime.now(UTC),
-                    metadata_json={"ecosystem_tags": article.ecosystem_tags},
+        if article.summary:
+            summary = await self.db.scalar(select(Summary).where(Summary.article_id == existing.id))
+            if summary is None:
+                summary = Summary(
+                    article_id=existing.id,
+                    model_provider="live-news",
+                    model_name="signal-ranker",
+                    what_happened=article.summary.what_happened,
+                    why_it_matters=article.summary.why_it_matters,
+                    who_is_affected=article.summary.who_is_affected,
+                    immediate_risks=article.summary.immediate_risks,
+                    long_term_implications=article.summary.long_term_implications,
                 )
-                self.db.add(existing)
-                await self.db.flush()
+                self.db.add(summary)
             else:
-                existing.title = article.title
-                existing.slug = article.slug
-                existing.excerpt = article.excerpt
-                existing.content = article.content
-                existing.image_url = article.image_url
-                existing.discussion_url = article.discussion_url
-                existing.urgency = article.urgency
-                existing.impact_score = float(article.impact_score)
-                existing.published_at = article.published_at
-                existing.ingested_at = datetime.now(UTC)
-                existing.source_id = source.id
-                existing.category_id = category.id if category else None
-                existing.metadata_json = {"ecosystem_tags": article.ecosystem_tags}
+                summary.what_happened = article.summary.what_happened
+                summary.why_it_matters = article.summary.why_it_matters
+                summary.who_is_affected = article.summary.who_is_affected
+                summary.immediate_risks = article.summary.immediate_risks
+                summary.long_term_implications = article.summary.long_term_implications
 
-            if article.summary:
-                summary = await self.db.scalar(select(Summary).where(Summary.article_id == existing.id))
-                if summary is None:
-                    summary = Summary(
-                        article_id=existing.id,
-                        model_provider="live-news",
-                        model_name="signal-ranker",
-                        what_happened=article.summary.what_happened,
-                        why_it_matters=article.summary.why_it_matters,
-                        who_is_affected=article.summary.who_is_affected,
-                        immediate_risks=article.summary.immediate_risks,
-                        long_term_implications=article.summary.long_term_implications,
-                    )
-                    self.db.add(summary)
-                else:
-                    summary.what_happened = article.summary.what_happened
-                    summary.why_it_matters = article.summary.why_it_matters
-                    summary.who_is_affected = article.summary.who_is_affected
-                    summary.immediate_risks = article.summary.immediate_risks
-                    summary.long_term_implications = article.summary.long_term_implications
+        if article.impact:
+            impact = await self.db.scalar(select(ImpactScore).where(ImpactScore.article_id == existing.id))
+            if impact is None:
+                impact = ImpactScore(
+                    article_id=existing.id,
+                    ecosystem_reach=float(article.impact.ecosystem_reach),
+                    security_severity=float(article.impact.security_severity),
+                    developer_impact=float(article.impact.developer_impact),
+                    infra_relevance=float(article.impact.infra_relevance),
+                    enterprise_relevance=float(article.impact.enterprise_relevance),
+                    urgency_score=float(article.impact.urgency_score),
+                    novelty=float(article.impact.novelty),
+                    ai_ecosystem_importance=float(article.impact.ai_ecosystem_importance),
+                    downstream_dependency_risk=float(article.impact.downstream_dependency_risk),
+                    impact_score=float(article.impact.impact_score),
+                    why_it_matters=article.impact.why_it_matters,
+                    affected_roles=article.impact.affected_roles,
+                )
+                self.db.add(impact)
+            else:
+                impact.ecosystem_reach = float(article.impact.ecosystem_reach)
+                impact.security_severity = float(article.impact.security_severity)
+                impact.developer_impact = float(article.impact.developer_impact)
+                impact.infra_relevance = float(article.impact.infra_relevance)
+                impact.enterprise_relevance = float(article.impact.enterprise_relevance)
+                impact.urgency_score = float(article.impact.urgency_score)
+                impact.novelty = float(article.impact.novelty)
+                impact.ai_ecosystem_importance = float(article.impact.ai_ecosystem_importance)
+                impact.downstream_dependency_risk = float(article.impact.downstream_dependency_risk)
+                impact.impact_score = float(article.impact.impact_score)
+                impact.why_it_matters = article.impact.why_it_matters
+                impact.affected_roles = article.impact.affected_roles
 
-            if article.impact:
-                impact = await self.db.scalar(select(ImpactScore).where(ImpactScore.article_id == existing.id))
-                if impact is None:
-                    impact = ImpactScore(
-                        article_id=existing.id,
-                        ecosystem_reach=float(article.impact.ecosystem_reach),
-                        security_severity=float(article.impact.security_severity),
-                        developer_impact=float(article.impact.developer_impact),
-                        infra_relevance=float(article.impact.infra_relevance),
-                        enterprise_relevance=float(article.impact.enterprise_relevance),
-                        urgency_score=float(article.impact.urgency_score),
-                        novelty=float(article.impact.novelty),
-                        ai_ecosystem_importance=float(article.impact.ai_ecosystem_importance),
-                        downstream_dependency_risk=float(article.impact.downstream_dependency_risk),
-                        impact_score=float(article.impact.impact_score),
-                        why_it_matters=article.impact.why_it_matters,
-                        affected_roles=article.impact.affected_roles,
-                    )
-                    self.db.add(impact)
-                else:
-                    impact.ecosystem_reach = float(article.impact.ecosystem_reach)
-                    impact.security_severity = float(article.impact.security_severity)
-                    impact.developer_impact = float(article.impact.developer_impact)
-                    impact.infra_relevance = float(article.impact.infra_relevance)
-                    impact.enterprise_relevance = float(article.impact.enterprise_relevance)
-                    impact.urgency_score = float(article.impact.urgency_score)
-                    impact.novelty = float(article.impact.novelty)
-                    impact.ai_ecosystem_importance = float(article.impact.ai_ecosystem_importance)
-                    impact.downstream_dependency_risk = float(article.impact.downstream_dependency_risk)
-                    impact.impact_score = float(article.impact.impact_score)
-                    impact.why_it_matters = article.impact.why_it_matters
-                    impact.affected_roles = article.impact.affected_roles
-
-        await self.db.commit()
+        return created
 
 
 class TaxonomyRepository:

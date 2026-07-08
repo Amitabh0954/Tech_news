@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     secret_key: str = Field(default="your-super-secret-key-change-this-in-production")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7
+    # OAuth client ID from Google Cloud Console (Credentials -> OAuth client ID -> Web
+    # application). Must match VITE_GOOGLE_CLIENT_ID on the frontend. Google sign-in is
+    # disabled until this is set.
+    google_client_id: str | None = None
     # Public origin this backend is reachable at. Required so image URLs served from
     # local static files (see services/images.py) are absolute — the frontend is
     # typically deployed on a different origin (e.g. Vercel), so a relative "/images/..."
@@ -106,12 +110,44 @@ class Settings(BaseSettings):
         "https://snyk.io/blog/feed/",
         "https://feeds.feedburner.com/TheHackersNews",
         "https://kubernetes.io/feed.xml",
+        "https://thenewstack.io/feed/",
+        "https://stackoverflow.blog/feed/",
+        "https://engineering.fb.com/feed/",
+        "https://slack.engineering/feed/",
+        "https://stripe.com/blog/feed.rss",
+        "https://about.gitlab.com/atom.xml",
+        "https://www.digitalocean.com/blog/rss",
+        "https://www.smashingmagazine.com/feed/",
+        "https://css-tricks.com/feed/",
+        "https://dev.to/feed",
+        "https://www.theregister.com/headlines.atom",
+        "https://www.bleepingcomputer.com/feed/",
+        "https://martinfowler.com/feed.atom",
+        "https://blog.jetbrains.com/feed/",
+        "https://spectrum.ieee.org/feeds/feed.rss",
+        "https://blog.pragmaticengineer.com/rss/",
+        "https://eng.lyft.com/feed",
     ]
     rss_story_limit_per_feed: int = 8
+    # arXiv's own public RSS feeds (export.arxiv.org) for the "Papers" tab.
+    arxiv_feed_urls: list[str] = [
+        "https://export.arxiv.org/rss/cs.AI",
+        "https://export.arxiv.org/rss/cs.LG",
+        "https://export.arxiv.org/rss/cs.CL",
+    ]
+    # Hugging Face's public "daily papers" API (same data backing huggingface.co/papers) —
+    # community-curated/upvoted trending papers, complementing the raw arXiv listings above.
+    huggingface_daily_papers_api_url: str = "https://huggingface.co/api/daily_papers"
     hacker_news_base_url: str = "https://hacker-news.firebaseio.com/v0"
     hacker_news_story_limit: int = 20
     llm_relevance_enabled: bool = False
-    ingestion_interval_minutes: int = 7
+    ingestion_interval_minutes: int = 3
+    # Retention: articles older than this are candidates for cleanup, but pruning only
+    # kicks in once the table actually holds enough rows to matter — a small dataset
+    # is cheap to keep in full, and bookmarked articles are always kept regardless of age.
+    article_retention_days: int = 30
+    article_retention_min_rows: int = 5000
+    retention_cleanup_interval_hours: int = 24
 
     @property
     def normalized_database_url(self) -> str:

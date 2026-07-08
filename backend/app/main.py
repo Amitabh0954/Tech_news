@@ -7,10 +7,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.workers.ingestion_worker import run_ingestion_cycle
+from app.workers.retention_worker import run_retention_cleanup
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +31,18 @@ async def lifespan(app: FastAPI):
         coalesce=True,
         misfire_grace_time=60,
     )
+    scheduler.add_job(
+        run_retention_cleanup,
+        trigger="interval",
+        hours=settings.retention_cleanup_interval_hours,
+        id="retention_cleanup",
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+    )
     scheduler.start()
     logger.info("ingestion scheduler started: every %d minutes", settings.ingestion_interval_minutes)
+    logger.info("retention cleanup scheduler started: every %d hours", settings.retention_cleanup_interval_hours)
 
     # Warm the cache once on boot without blocking startup or user requests on it.
     asyncio.create_task(run_ingestion_cycle())
@@ -55,6 +69,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.include_router(api_router, prefix="/api/v1")
 

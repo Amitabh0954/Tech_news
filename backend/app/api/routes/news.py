@@ -4,7 +4,6 @@ from app.api.deps import get_news_service
 from app.schemas.news import ArticleDetail, PaginatedArticles
 from app.services.news import NewsService
 
-
 router = APIRouter(prefix="/news")
 
 
@@ -13,6 +12,7 @@ async def list_news(
     category: str | None = Query(default=None),
     urgency: str | None = Query(default=None),
     q: str | None = Query(default=None),
+    source_type: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=50),
     service: NewsService = Depends(get_news_service),
@@ -21,6 +21,7 @@ async def list_news(
         category=category,
         urgency=urgency,
         query=q,
+        source_type=source_type,
         page=page,
         page_size=page_size,
     )

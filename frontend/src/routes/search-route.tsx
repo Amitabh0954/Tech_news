@@ -1,11 +1,18 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { StoryCard } from "@/components/news/story-card";
 import { useSearchNews } from "@/features/articles/queries";
 
 export function SearchRoute() {
-  const [query, setQuery] = useState("supply chain");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") ?? "supply chain");
   const { data, isLoading } = useSearchNews(query);
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setSearchParams(value ? { q: value } : {}, { replace: true });
+  };
 
   return (
     <section className="border border-border bg-panel p-6 dark:border-white/10">
@@ -19,7 +26,7 @@ export function SearchRoute() {
       </p>
       <input
         value={query}
-        onChange={(event) => setQuery(event.target.value)}
+        onChange={(event) => handleQueryChange(event.target.value)}
         placeholder="Search CVEs, cloud outages, model releases..."
         className="mt-5 w-full border border-border bg-background px-4 py-3 text-sm text-zinc-900 outline-none dark:border-white/10 dark:text-white"
       />

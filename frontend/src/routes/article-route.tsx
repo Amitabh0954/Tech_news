@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 
 import { BookmarkButton } from "@/components/ui/bookmark-button";
+import { ShareButton } from "@/components/ui/share-button";
 import { ImpactBadge } from "@/components/ui/impact-badge";
 import { StoryCard } from "@/components/news/story-card";
 import { DateLine } from "@/components/news/article-primitives";
@@ -38,6 +39,7 @@ export function ArticleRoute() {
         <ImpactBadge score={data.impact_score} urgency={data.urgency} />
         <div className="flex items-center gap-3">
           <BookmarkButton articleId={data.id} />
+          <ShareButton title={data.title} url={`${window.location.origin}/app/article/${data.slug}`} />
           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">
             {data.source.name} · <DateLine timestamp={data.published_at} />
           </div>

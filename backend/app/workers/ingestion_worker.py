@@ -2,6 +2,7 @@ import logging
 
 from app.db.session import SessionLocal
 from app.repositories.news import NewsRepository, TaxonomyRepository
+from app.services.events import news_events
 from app.services.ingestion.pipeline import IngestionPipeline
 from app.services.ingestion.scoring import LIVE_CATEGORIES
 
@@ -38,10 +39,12 @@ async def run_ingestion_cycle() -> int:
     try:
         async with SessionLocal() as session:
             repository = NewsRepository(session)
-            await repository.upsert_articles(articles)
+            new_count = await repository.upsert_articles(articles)
     except Exception:
         logger.exception("ingestion cycle failed while persisting articles to the database")
         return 0
 
-    logger.info("ingestion cycle persisted %d articles", len(articles))
+    logger.info("ingestion cycle persisted %d articles (%d new)", len(articles), new_count)
+    if new_count:
+        news_events.publish({"type": "new_articles", "count": new_count})
     return len(articles)

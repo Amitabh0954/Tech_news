@@ -1,10 +1,8 @@
 import base64
 import hashlib
-import re
 from pathlib import Path
 
 from app.core.config import settings
-
 
 ACCENTS = {
     "AI": "#7c3aed",

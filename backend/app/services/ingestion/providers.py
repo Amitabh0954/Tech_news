@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from html import unescape
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
 import feedparser
 import httpx
@@ -13,6 +13,46 @@ from slugify import slugify
 from app.core.config import settings
 
 _SKIP_IMAGE_HINTS = ("avatar", "gravatar", "spacer", "pixel", "tracking", "1x1", "icon-", "favicon", "badge")
+
+_LOW_RES_WIDTH_PARAMS = ("w", "width")
+_LOW_RES_QUALITY_PARAMS = ("q", "quality")
+_MIN_IMAGE_WIDTH = 800
+_UPGRADED_IMAGE_WIDTH = 1600
+_MIN_IMAGE_QUALITY = 60
+_UPGRADED_IMAGE_QUALITY = 85
+
+
+def _upgrade_image_resolution(url: str) -> str:
+    """Many CMS/CDNs (Contentful, WordPress Photon, imgix, Ghost, ...) all use the same
+    ?w=/?q=-style resize query params, and feeds routinely embed a thumbnail sized for a
+    small inline preview (e.g. Contentful's own "?w=300&q=30") rather than a full asset.
+    Displayed as our full-width hero image, that reads as visibly blurry/upscaled — bump
+    those params back up so the CDN serves a sharper render of the same underlying asset.
+    """
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return url
+    if not parsed.query:
+        return url
+
+    changed = False
+    upgraded: list[tuple[str, str]] = []
+    for key, value in parse_qsl(parsed.query, keep_blank_values=True):
+        lower_key = key.lower()
+        if lower_key in _LOW_RES_WIDTH_PARAMS and value.isdigit() and int(value) < _MIN_IMAGE_WIDTH:
+            upgraded.append((key, str(_UPGRADED_IMAGE_WIDTH)))
+            changed = True
+        elif lower_key in _LOW_RES_QUALITY_PARAMS and value.isdigit() and int(value) < _MIN_IMAGE_QUALITY:
+            upgraded.append((key, str(_UPGRADED_IMAGE_QUALITY)))
+            changed = True
+        else:
+            upgraded.append((key, value))
+
+    if not changed:
+        return url
+
+    return urlunparse(parsed._replace(query=urlencode(upgraded)))
 
 
 def _extract_first_image_from_html(html: str) -> str | None:
@@ -122,8 +162,16 @@ class BaseProvider(ABC):
 class RSSProvider(BaseProvider):
     slug = "rss"
 
-    def __init__(self, feed_urls: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        feed_urls: list[str] | None = None,
+        *,
+        source_type_override: str | None = None,
+        source_name_override: str | None = None,
+    ) -> None:
         self.feed_urls = feed_urls or settings.rss_feed_urls
+        self.source_type_override = source_type_override
+        self.source_name_override = source_name_override
 
     async def _fetch_feed(self, feed_url: str) -> list[dict[str, Any]]:
         try:
@@ -148,17 +196,21 @@ class RSSProvider(BaseProvider):
             published_struct = getattr(entry, "published_parsed", None)
             published_at = datetime(*published_struct[:6], tzinfo=UTC) if published_struct else None
             host = urlparse(link).netloc if link else "rss-feed"
-            source_name = feed_title or host
+            is_youtube = "youtube.com" in host
+            source_type = self.source_type_override or ("youtube" if is_youtube else "rss")
+            source_name = self.source_name_override or feed_title or host
             source_slug = slugify(source_name) or host.replace(".", "-")
-            youtube_image = _youtube_thumbnail(entry, link) if "youtube.com" in host else None
+            youtube_image = _youtube_thumbnail(entry, link) if is_youtube else None
             image_url = youtube_image or _extract_rss_image(entry, summary, full_content)
+            if image_url:
+                image_url = _upgrade_image_resolution(image_url)
             plain_summary = _strip_html_tags(summary)
             items.append(
                 {
                     "external_id": slugify(f"{feed_url}-{title}")[:120],
                     "source_slug": source_slug,
                     "source_name": source_name,
-                    "source_type": "youtube" if "youtube.com" in host else "rss",
+                    "source_type": source_type,
                     "title": title,
                     "canonical_url": link or feed_url,
                     "published_at": published_at,
@@ -166,7 +218,7 @@ class RSSProvider(BaseProvider):
                     "content": full_content or summary,
                     "excerpt": plain_summary[:500] or title,
                     "image_url": image_url,
-                    "tags": ["rss", host, "youtube" if "youtube.com" in host else "article"],
+                    "tags": [source_type, host, "youtube" if is_youtube else "article"],
                     "raw_metadata": {"feed_url": feed_url},
                 }
             )
@@ -179,7 +231,7 @@ class RSSProvider(BaseProvider):
                 )
             for item, og_image in zip(missing_image, fetched):
                 if og_image:
-                    item["image_url"] = og_image
+                    item["image_url"] = _upgrade_image_resolution(og_image)
 
         return items
 
@@ -305,6 +357,76 @@ class RedditProvider(BaseProvider):
                         },
                     }
                 )
+        return items
+
+
+class HuggingFacePapersProvider(BaseProvider):
+    """Hugging Face's public daily-papers API — the same data behind huggingface.co/papers.
+    Community-curated/upvoted, so it surfaces "good recent papers" rather than the full
+    firehose of a raw arXiv category feed.
+    """
+
+    slug = "huggingface-papers"
+
+    def __init__(self, api_url: str | None = None) -> None:
+        self.api_url = api_url or settings.huggingface_daily_papers_api_url
+
+    async def fetch_items(self) -> list[dict[str, Any]]:
+        # This is a single HTTP call feeding the whole Papers tab (unlike RSSProvider,
+        # which spreads risk across many feeds) — under heavy concurrent load from the
+        # other providers firing at once, a lone ConnectTimeout would otherwise zero out
+        # every Hugging Face paper for the cycle, so retry once before giving up.
+        payload = None
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.get(self.api_url)
+                    response.raise_for_status()
+                    payload = response.json()
+                break
+            except Exception:
+                if attempt == 1:
+                    return []
+
+        if not isinstance(payload, list):
+            return []
+
+        items: list[dict[str, Any]] = []
+        for entry in payload:
+            paper = entry.get("paper") or {}
+            paper_id = paper.get("id")
+            title = unescape(paper.get("title") or "").strip()
+            if not paper_id or not title:
+                continue
+
+            summary = unescape(paper.get("ai_summary") or paper.get("summary") or "").strip()
+            published_at = None
+            published_raw = paper.get("publishedAt")
+            if published_raw:
+                try:
+                    published_at = datetime.fromisoformat(str(published_raw).replace("Z", "+00:00"))
+                except ValueError:
+                    published_at = None
+
+            authors = [author.get("name") for author in paper.get("authors", []) if author.get("name")]
+
+            items.append(
+                {
+                    "external_id": paper_id,
+                    "source_slug": "huggingface-papers",
+                    "source_name": "Hugging Face Papers",
+                    "source_type": "paper",
+                    "title": title,
+                    "canonical_url": f"https://huggingface.co/papers/{paper_id}",
+                    "published_at": published_at,
+                    "author": ", ".join(authors[:3]) or None,
+                    "content": summary,
+                    "excerpt": summary[:500] or title,
+                    "image_url": _upgrade_image_resolution(paper["thumbnail"]) if paper.get("thumbnail") else None,
+                    "tags": ["paper", "huggingface", "trending"],
+                    "raw_metadata": {"upvotes": paper.get("upvotes"), "num_comments": paper.get("numComments")},
+                }
+            )
         return items
 
 

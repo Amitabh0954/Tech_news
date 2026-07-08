@@ -26,12 +26,15 @@ class NewsService:
         category: str | None = None,
         urgency: str | None = None,
         query: str | None = None,
+        source_type: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedArticles:
         items = get_demo_feed().items
         if category:
             items = [item for item in items if item.category and item.category.slug == category]
+        if source_type:
+            items = [item for item in items if item.source.source_type == source_type]
         if urgency:
             items = [item for item in items if item.urgency == urgency]
         if query:
@@ -54,6 +57,7 @@ class NewsService:
         category: str | None = None,
         urgency: str | None = None,
         query: str | None = None,
+        source_type: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedArticles:
@@ -63,16 +67,21 @@ class NewsService:
                 category=category,
                 urgency=urgency,
                 query=query,
+                source_type=source_type,
                 limit=page_size,
                 offset=offset,
             )
         except Exception:
             logger.exception("failed to read articles from the database, serving static demo feed")
-            return self._demo_feed(category=category, urgency=urgency, query=query, page=page, page_size=page_size)
+            return self._demo_feed(
+                category=category, urgency=urgency, query=query, source_type=source_type, page=page, page_size=page_size
+            )
 
         if not rows:
             logger.info("no cached articles yet for this filter, serving static demo feed while ingestion catches up")
-            return self._demo_feed(category=category, urgency=urgency, query=query, page=page, page_size=page_size)
+            return self._demo_feed(
+                category=category, urgency=urgency, query=query, source_type=source_type, page=page, page_size=page_size
+            )
 
         next_cursor = str(page + 1) if offset + page_size < total else None
         return PaginatedArticles(items=list(rows), total=total, next_cursor=next_cursor)

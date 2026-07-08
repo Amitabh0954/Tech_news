@@ -110,8 +110,34 @@ class Settings(BaseSettings):
         "https://snyk.io/blog/feed/",
         "https://feeds.feedburner.com/TheHackersNews",
         "https://kubernetes.io/feed.xml",
+        "https://thenewstack.io/feed/",
+        "https://stackoverflow.blog/feed/",
+        "https://engineering.fb.com/feed/",
+        "https://slack.engineering/feed/",
+        "https://stripe.com/blog/feed.rss",
+        "https://about.gitlab.com/atom.xml",
+        "https://www.digitalocean.com/blog/rss",
+        "https://www.smashingmagazine.com/feed/",
+        "https://css-tricks.com/feed/",
+        "https://dev.to/feed",
+        "https://www.theregister.com/headlines.atom",
+        "https://www.bleepingcomputer.com/feed/",
+        "https://martinfowler.com/feed.atom",
+        "https://blog.jetbrains.com/feed/",
+        "https://spectrum.ieee.org/feeds/feed.rss",
+        "https://blog.pragmaticengineer.com/rss/",
+        "https://eng.lyft.com/feed",
     ]
     rss_story_limit_per_feed: int = 8
+    # arXiv's own public RSS feeds (export.arxiv.org) for the "Papers" tab.
+    arxiv_feed_urls: list[str] = [
+        "https://export.arxiv.org/rss/cs.AI",
+        "https://export.arxiv.org/rss/cs.LG",
+        "https://export.arxiv.org/rss/cs.CL",
+    ]
+    # Hugging Face's public "daily papers" API (same data backing huggingface.co/papers) —
+    # community-curated/upvoted trending papers, complementing the raw arXiv listings above.
+    huggingface_daily_papers_api_url: str = "https://huggingface.co/api/daily_papers"
     hacker_news_base_url: str = "https://hacker-news.firebaseio.com/v0"
     hacker_news_story_limit: int = 20
     llm_relevance_enabled: bool = False

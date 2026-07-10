@@ -1,7 +1,7 @@
 import asyncio
 import re
 from abc import ABC, abstractmethod
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from html import unescape
 from typing import Any
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
@@ -303,6 +303,214 @@ class GitHubProvider(BaseProvider):
                     }
                 )
         return items
+
+
+_HEADING_LINE_PATTERN = re.compile(r"^\s{0,3}#{1,6}\s")
+_BADGE_LINE_PATTERN = re.compile(r"^\s*\[?!\[[^\]]*\]\([^)]*\)\]?(\([^)]*\))?\s*$")
+_MD_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\([^)]*\)")
+_MD_EMPHASIS_PATTERN = re.compile(r"(\*\*|__|\*|_)(.+?)\1")
+_MD_INLINE_CODE_PATTERN = re.compile(r"`([^`]+)`")
+
+# In-memory only: acceptable because trending repos stay in the "created in the last N
+# days" window for days, so the vast majority of cycles hit this cache instead of the
+# API — it just resets (and re-warms within a cycle or two) across process restarts.
+_README_CACHE_MAX_SIZE = 500
+_readme_brief_cache: dict[str, str] = {}
+
+
+def _clean_readme_paragraph(text: str) -> str:
+    text = _MD_LINK_PATTERN.sub(r"\1", text)
+    text = _MD_EMPHASIS_PATTERN.sub(r"\2", text)
+    text = _MD_INLINE_CODE_PATTERN.sub(r"\1", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _extract_readme_brief(markdown: str, max_length: int = 400) -> str | None:
+    """Pull the first substantial descriptive paragraph out of a README (skipping
+    headings, badges, blockquotes, and tables) so a trending-repo card can show what a
+    project actually does instead of just its GitHub one-liner, which is often empty.
+    """
+    if not markdown:
+        return None
+
+    paragraphs: list[str] = []
+    current: list[str] = []
+    for raw_line in markdown.splitlines():
+        line = raw_line.strip()
+        is_noise = (
+            not line
+            or _HEADING_LINE_PATTERN.match(line)
+            or _BADGE_LINE_PATTERN.match(line)
+            or line.startswith((">", "|", "<", "---", "***"))
+        )
+        if is_noise:
+            if current:
+                paragraphs.append(" ".join(current))
+                current = []
+            continue
+        current.append(line)
+    if current:
+        paragraphs.append(" ".join(current))
+
+    for paragraph in paragraphs:
+        # Nav/badge rows ("**[Project Page](url)** | **[Paper](url)** | ...") use plain
+        # markdown links rather than image badges, so they survive the noise filter
+        # above — but once the link *text* is stripped out too, only formatting noise
+        # (**, |, emoji) is left. A real descriptive paragraph keeps its prose letters.
+        link_count = len(_MD_LINK_PATTERN.findall(paragraph))
+        letters_outside_links = len(re.findall(r"[A-Za-z]", _MD_LINK_PATTERN.sub("", paragraph)))
+        if link_count >= 2 and letters_outside_links < 15:
+            continue
+
+        cleaned = _clean_readme_paragraph(paragraph)
+        if len(cleaned) < 40:
+            continue
+        if len(cleaned) <= max_length:
+            return cleaned
+        return cleaned[:max_length].rsplit(" ", 1)[0] + "…"
+
+    return None
+
+
+async def _fetch_readme_brief(client: httpx.AsyncClient, full_name: str) -> str | None:
+    if full_name in _readme_brief_cache:
+        return _readme_brief_cache[full_name]
+    try:
+        response = await client.get(
+            f"https://api.github.com/repos/{full_name}/readme",
+            headers={"Accept": "application/vnd.github.raw+json"},
+        )
+        if response.status_code >= 400:
+            return None
+        brief = _extract_readme_brief(response.text)
+    except Exception:
+        return None
+
+    if brief:
+        if len(_readme_brief_cache) >= _README_CACHE_MAX_SIZE:
+            _readme_brief_cache.pop(next(iter(_readme_brief_cache)))
+        _readme_brief_cache[full_name] = brief
+    return brief
+
+
+class GitHubTrendingProvider(BaseProvider):
+    """GitHub publishes no official trending API. This uses the standard workaround:
+    repos created in the last N days, sorted by star count — the same heuristic behind
+    most third-party "GitHub trending via API" tools. Unlike GitHubProvider, this never
+    requires a token (it just gets a lower rate limit without one, which a once-per-cycle
+    call comfortably stays under).
+    """
+
+    slug = "github-trending"
+
+    def __init__(self, languages: list[str] | None = None, *, days: int | None = None) -> None:
+        self.languages = languages if languages is not None else settings.github_trending_languages
+        self.days = days or settings.github_trending_days
+
+    async def fetch_items(self) -> list[dict[str, Any]]:
+        since = (datetime.now(UTC) - timedelta(days=self.days)).strftime("%Y-%m-%d")
+        headers = {"Accept": "application/vnd.github+json"}
+        if settings.github_token:
+            headers["Authorization"] = f"Bearer {settings.github_token}"
+
+        def _query_for(language: str) -> str:
+            base = f"created:>{since}"
+            return f"{base} language:{language}" if language else base
+
+        # Running alongside every other provider's own concurrent requests (asyncio.gather
+        # across ~40 RSS feeds etc.) means a lone connection can time out under contention
+        # even though the API itself is healthy — retry once, and don't let one language's
+        # failure (return_exceptions=True) blank out the other languages' results.
+        responses: list[Any] = []
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(timeout=30.0, headers=headers) as client:
+                    responses = await asyncio.gather(
+                        *[
+                            client.get(
+                                "https://api.github.com/search/repositories",
+                                params={
+                                    "q": _query_for(language),
+                                    "sort": "stars",
+                                    "order": "desc",
+                                    "per_page": settings.github_trending_limit_per_query,
+                                },
+                            )
+                            for language in self.languages
+                        ],
+                        return_exceptions=True,
+                    )
+                break
+            except Exception:
+                if attempt == 1:
+                    return []
+
+        items: list[dict[str, Any]] = []
+        for response in responses:
+            if isinstance(response, BaseException) or response.status_code >= 400:
+                continue
+            payload = response.json()
+            for repo in payload.get("items", []):
+                title = repo["full_name"]
+                description = repo.get("description") or title
+                stars = repo.get("stargazers_count") or 0
+                language = repo.get("language") or "Unknown"
+                items.append(
+                    {
+                        "external_id": str(repo["id"]),
+                        "source_slug": self.slug,
+                        "source_name": "GitHub Trending",
+                        "source_type": "github-trending",
+                        "title": title,
+                        "canonical_url": repo["html_url"],
+                        "published_at": datetime.fromisoformat(repo["created_at"].replace("Z", "+00:00")),
+                        "author": repo.get("owner", {}).get("login"),
+                        "content": description,
+                        "excerpt": f"⭐ {stars:,} stars · {language} — {description}"[:500],
+                        "image_url": repo.get("owner", {}).get("avatar_url"),
+                        "tags": ["github-trending", "trending", "repository", language],
+                        "raw_metadata": {
+                            "stars": stars,
+                            "watchers": repo.get("watchers_count"),
+                            "language": language,
+                            "topics": repo.get("topics", []),
+                        },
+                    }
+                )
+
+        await self._attach_readme_briefs(items, headers)
+        return items
+
+    async def _attach_readme_briefs(self, items: list[dict[str, Any]], headers: dict[str, str]) -> None:
+        unique_names = list(dict.fromkeys(item["title"] for item in items))
+        to_fetch = [name for name in unique_names if name not in _readme_brief_cache]
+        to_fetch = to_fetch[: settings.github_trending_readme_fetch_limit]
+        if not to_fetch:
+            for item in items:
+                self._apply_readme_brief(item)
+            return
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
+                await asyncio.gather(
+                    *[_fetch_readme_brief(client, name) for name in to_fetch], return_exceptions=True
+                )
+        except Exception:
+            pass
+
+        for item in items:
+            self._apply_readme_brief(item)
+
+    @staticmethod
+    def _apply_readme_brief(item: dict[str, Any]) -> None:
+        brief = _readme_brief_cache.get(item["title"])
+        if not brief:
+            return
+        item["content"] = brief
+        stars = item["raw_metadata"]["stars"]
+        language = item["raw_metadata"]["language"]
+        item["excerpt"] = f"⭐ {stars:,} stars · {language} — {brief}"[:500]
 
 
 class RedditProvider(BaseProvider):

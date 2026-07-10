@@ -5,6 +5,7 @@ Summary: Backend for a high-signal engineering intelligence portal
 Requires-Python: >=3.12
 Requires-Dist: fastapi>=0.115.0
 Requires-Dist: uvicorn[standard]>=0.30.0
+Requires-Dist: apscheduler>=3.10.4
 Requires-Dist: sqlalchemy>=2.0.36
 Requires-Dist: asyncpg>=0.30.0
 Requires-Dist: accelerate>=1.2.1
@@ -16,6 +17,14 @@ Requires-Dist: httpx>=0.28.0
 Requires-Dist: feedparser>=6.0.11
 Requires-Dist: huggingface-hub>=0.33.0
 Requires-Dist: pgvector>=0.3.6
-Requires-Dist: praw>=7.8.1
 Requires-Dist: torch>=2.5.1
 Requires-Dist: transformers>=4.51.0
+Requires-Dist: passlib[bcrypt]>=1.7.4
+Requires-Dist: python-jose[cryptography]>=3.3.0
+Requires-Dist: python-multipart>=0.0.7
+Requires-Dist: alembic>=1.13.0
+Requires-Dist: slowapi>=0.1.9
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.24.0; extra == "dev"
+Requires-Dist: ruff>=0.7.0; extra == "dev"

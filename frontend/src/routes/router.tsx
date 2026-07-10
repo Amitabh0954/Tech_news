@@ -1,12 +1,14 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { ArchitecturePage } from "@/features/architecture/architecture-page";
 import { ArticleRoute } from "@/routes/article-route";
 import { BookmarksRoute } from "@/routes/bookmarks-route";
 import { CriticalRoute } from "@/routes/critical-route";
 import { HomeRoute } from "@/routes/home-route";
+import { LatestRoute } from "@/routes/latest-route";
 import { LoginRoute } from "@/routes/login-route";
+import { PapersRoute } from "@/routes/papers-route";
+import { ReposRoute } from "@/routes/repos-route";
 import { SearchRoute } from "@/routes/search-route";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -34,10 +36,12 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomeRoute /> },
       { path: "article/:slug", element: <ArticleRoute /> },
+      { path: "latest", element: <LatestRoute /> },
       { path: "critical", element: <CriticalRoute /> },
       { path: "search", element: <SearchRoute /> },
       { path: "bookmarks", element: <BookmarksRoute /> },
-      { path: "architecture", element: <ArchitecturePage /> },
+      { path: "papers", element: <PapersRoute /> },
+      { path: "repos", element: <ReposRoute /> },
       { path: "*", element: <Navigate to="/app" replace /> },
     ],
   },

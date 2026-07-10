@@ -1,20 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import type { Article } from "@/lib/api";
-import { StoryRow } from "@/components/news/story-row";
 
-export function NewsRiver({
+export function CardGrid({
   items,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
-  title = "Top Engineering Stories",
+  renderCard,
 }: {
   items: Article[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
-  title?: string;
+  renderCard: (article: Article) => ReactNode;
 }) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -35,22 +34,16 @@ export function NewsRiver({
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <section className="border-t border-border pt-8 dark:border-white/10">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-slate-500">
-          {title}
-        </div>
-        <div className="text-xs text-zinc-500 dark:text-slate-500">{items.length} stories</div>
-      </div>
-      <div>
+    <div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((article) => (
-          <StoryRow key={article.id} article={article} />
+          <div key={article.id}>{renderCard(article)}</div>
         ))}
       </div>
       <div ref={sentinelRef} className="h-8" />
       {isFetchingNextPage ? (
-        <div className="pt-4 text-sm text-zinc-500 dark:text-slate-500">Loading more engineering signal...</div>
+        <div className="pt-4 text-sm text-zinc-500 dark:text-slate-500">Loading more...</div>
       ) : null}
-    </section>
+    </div>
   );
 }

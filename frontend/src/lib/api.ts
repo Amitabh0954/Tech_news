@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/auth-store";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api/v1").replace(/\/$/, "");
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api/v1").replace(/\/$/, "");
 
 export type AuthUser = {
   id: string;
@@ -162,9 +162,11 @@ export const api = {
         body: JSON.stringify({ credential }),
       }),
   },
-  getNews: (page = 1, pageSize = 8, category?: string | null) =>
+  getNews: (page = 1, pageSize = 8, category?: string | null, sourceType?: string | null) =>
     request<PaginatedArticles>(
-      `/news?page=${page}&page_size=${pageSize}${category ? `&category=${encodeURIComponent(category)}` : ""}`,
+      `/news?page=${page}&page_size=${pageSize}${category ? `&category=${encodeURIComponent(category)}` : ""}${
+        sourceType ? `&source_type=${encodeURIComponent(sourceType)}` : ""
+      }`,
     ),
   getCritical: () => request<Article[]>("/critical"),
   getTrending: () => request<TrendingTopic[]>("/trending"),

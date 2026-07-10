@@ -1,3 +1,4 @@
+import typography from "@tailwindcss/typography";
 import type { Config } from "tailwindcss";
 
 export default {
@@ -23,7 +24,24 @@ export default {
       boxShadow: {
         panel: "0 0 0 1px rgba(255,255,255,0.04), 0 16px 48px rgba(0,0,0,0.35)",
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            img: {
+              borderRadius: "0.25rem",
+              // Feed content mixes portrait screenshots, wide banners, and tiny inline
+              // icons — cap height so one outlier image can't dominate the article body,
+              // while max-width/height:auto (from typography's defaults) keeps every
+              // image at its correct aspect ratio instead of stretching to fill.
+              maxHeight: "28rem",
+              objectFit: "contain",
+              marginLeft: "auto",
+              marginRight: "auto",
+            },
+          },
+        },
+      },
     },
   },
-  plugins: [],
+  plugins: [typography],
 } satisfies Config;

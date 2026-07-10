@@ -23,8 +23,40 @@ dependencies = [
   "passlib[bcrypt]>=1.7.4",
   "python-jose[cryptography]>=3.3.0",
   "python-multipart>=0.0.7",
+  "alembic>=1.13.0",
+  "slowapi>=0.1.9",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.24.0",
+  "ruff>=0.7.0",
 ]
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+# Without this, setuptools' automatic package discovery becomes ambiguous once
+# tests/ and alembic/ exist alongside app/ at the top level — it can't tell which
+# top-level directory is "the package".
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+# Line length is a style preference, not a correctness signal, and the existing
+# codebase has plenty of long lines predating this lint setup — enforcing it now
+# would mean reflowing unrelated code just to turn CI green.
+ignore = ["E501"]

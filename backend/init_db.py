@@ -11,18 +11,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import asyncpg
-from sqlalchemy import text
+
+# Imported for the side effect of registering every model class on Base.metadata
+# before create_all() below — without this import, metadata is empty and creates
+# zero tables. Superseded by Alembic (see README) but kept for quick local setup.
+import app.models.news  # noqa: F401
 from app.db.base import Base
-from app.models.news import (  # Import all models
-    Article,
-    Bookmark,
-    Category,
-    ImpactScore,
-    Source,
-    Summary,
-    Tag,
-    User,
-)
 
 
 async def init_db():
@@ -50,7 +44,7 @@ async def init_db():
         print("Creating database tables...")
         
         # Create all tables using SQLAlchemy
-        from sqlalchemy import create_engine, event
+        from sqlalchemy import create_engine
         
         # Create a sync engine just for metadata
         sync_engine = create_engine("postgresql+psycopg2://postgres:amit%400954@localhost:5432/Tech_news", echo=False)

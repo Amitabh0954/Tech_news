@@ -21,6 +21,14 @@ export function sanitizeFeedHtml(html?: string | null) {
       if (name.startsWith("on") || value.startsWith("javascript:")) {
         element.removeAttribute(attribute.name);
       }
+      // Inline style/width/height attributes on feed-sourced <img> tags routinely carry
+      // dimensions from the original site's layout (or a stale/mismatched CMS default)
+      // that has nothing to do with the image's real aspect ratio. Inline styles beat
+      // any stylesheet rule we write, so leaving them in place is what causes stretched/
+      // squished images in article bodies — strip them and let our own CSS size images.
+      if (name === "style" || (element.tagName === "IMG" && (name === "width" || name === "height"))) {
+        element.removeAttribute(attribute.name);
+      }
     });
   });
 

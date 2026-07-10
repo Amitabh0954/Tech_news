@@ -51,6 +51,18 @@ class Settings(BaseSettings):
     github_token: str | None = None
     github_repository_queries: list[str] = ["ai", "kubernetes", "typescript", "github actions security"]
     github_repository_limit_per_query: int = 3
+    # GitHub has no official "trending" API, so this uses the same heuristic most
+    # trending-repo tools rely on: repos created within the last N days, sorted by star
+    # count. Works fully unauthenticated (falls back to github_token if set, for a higher
+    # rate limit) — an empty string language entry means "all languages", matching the
+    # "All" tab on github.com/trending.
+    github_trending_languages: list[str] = ["", "python", "typescript", "rust", "go"]
+    github_trending_days: int = 7
+    github_trending_limit_per_query: int = 8
+    # README fetches hit GitHub's core API (60/hour unauthenticated, shared with every
+    # other unauthenticated caller from this IP) rather than the search API, so this caps
+    # how many *new* (not-already-cached) repos get a README fetch per ingestion cycle.
+    github_trending_readme_fetch_limit: int = 12
     reddit_user_agent: str = "engintel-newsportal/0.1"
     reddit_top_urls: list[str] = [
         "https://www.reddit.com/r/programming/top.json?t=day&limit=25",

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from app.db.session import SessionLocal
@@ -7,6 +8,14 @@ from app.services.ingestion.pipeline import IngestionPipeline
 from app.services.ingestion.scoring import LIVE_CATEGORIES
 
 logger = logging.getLogger(__name__)
+
+# The scheduler (every ingestion_interval_minutes) and the manual POST /ingestion/refresh
+# endpoint both call run_ingestion_cycle() but aren't otherwise coordinated. Without this
+# lock, an overlapping run against the same slow upstream feeds (venturebeat, etc.) could
+# race to upsert the same article with two different fetches of the same source in flight,
+# and whichever write lands last silently wins — including reverting an already-fixed field
+# back to a stale value with no error surfaced anywhere.
+_ingestion_lock = asyncio.Lock()
 
 
 async def seed_categories() -> None:
@@ -23,6 +32,15 @@ async def run_ingestion_cycle() -> int:
     Called by the APScheduler interval job in app.main and by the manual
     POST /ingestion/refresh endpoint. Never called from a user-facing read path.
     """
+    if _ingestion_lock.locked():
+        logger.info("ingestion cycle already in progress, skipping this trigger")
+        return 0
+
+    async with _ingestion_lock:
+        return await _run_ingestion_cycle_locked()
+
+
+async def _run_ingestion_cycle_locked() -> int:
     await seed_categories()
 
     pipeline = IngestionPipeline()

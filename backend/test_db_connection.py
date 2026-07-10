@@ -1,5 +1,7 @@
-import asyncpg
 import asyncio
+
+import asyncpg
+
 
 async def test_connection():
     try:

@@ -9,9 +9,11 @@ import { useUIStore } from "@/stores/ui-store";
 
 const pageNavItems = [
   { to: "/app", label: "Top Stories" },
+  { to: "/app/latest", label: "Latest" },
   { to: "/app/critical", label: "Critical" },
   { to: "/app/bookmarks", label: "Saved" },
-  { to: "/app/architecture", label: "Architecture" },
+  { to: "/app/papers", label: "Papers" },
+  { to: "/app/repos", label: "Repos" },
 ];
 
 // Only the highest-traffic categories get a direct shortcut in the header;

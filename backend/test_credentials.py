@@ -1,5 +1,7 @@
-import asyncpg
 import asyncio
+
+import asyncpg
+
 
 async def test_credentials():
     """Test different PostgreSQL credentials"""
@@ -24,7 +26,7 @@ async def test_credentials():
             
             # Get database info
             result = await conn.fetchval("SELECT version();")
-            print(f"✅ SUCCESS! Connected to PostgreSQL")
+            print("✅ SUCCESS! Connected to PostgreSQL")
             print(f"   Version: {result[:50]}...")
             
             # List databases

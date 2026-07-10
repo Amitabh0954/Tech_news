@@ -11,6 +11,7 @@ from app.services.images import generate_story_image_data_uri, select_local_stor
 from app.services.ingestion.orchestrator import IngestionOrchestrator
 from app.services.ingestion.providers import (
     GitHubProvider,
+    GitHubTrendingProvider,
     HackerNewsProvider,
     HuggingFacePapersProvider,
     RedditProvider,
@@ -35,6 +36,7 @@ SOURCE_TYPE_LIMITS: dict[str, int] = {
     "github": 8,
     "reddit": 5,
     "paper": 45,
+    "github-trending": 30,
 }
 
 
@@ -55,6 +57,7 @@ class IngestionPipeline:
                 HuggingFacePapersProvider(),
                 HackerNewsProvider(),
                 GitHubProvider(),
+                GitHubTrendingProvider(),
                 RedditProvider(),
             ]
         )
@@ -96,11 +99,15 @@ class IngestionPipeline:
             # Papers are curated by feed choice rather than by keyword relevance — the
             # ranker's keep-gate is tuned for "production engineering" signal terms and
             # would silently drop most paper abstracts that don't happen to contain them.
-            is_curated_source = source_type == "paper"
+            is_curated_source = source_type in {"paper", "github-trending"}
             if not ranked.keep:
                 if not is_curated_source:
                     continue
-                ranked.why_this_matters = "Recent paper surfaced for the Papers tab."
+                ranked.why_this_matters = (
+                    "Trending repository surfaced for the Repos tab."
+                    if source_type == "github-trending"
+                    else "Recent paper surfaced for the Papers tab."
+                )
 
             seen_titles.add(title_key)
             source_type_counts[source_type] = source_type_counts.get(source_type, 0) + 1

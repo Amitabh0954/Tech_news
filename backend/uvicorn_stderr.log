@@ -1,0 +1,26 @@
+INFO:     Started server process [4484]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+ingestion cycle collected 0 articles to persist this run
+Execution of job "run_ingestion_cycle (trigger: interval[0:03:00], next run at: 2026-07-10 03:51:36 IST)" skipped: maximum number of running instances reached (1)
+ingestion cycle collected 0 articles to persist this run

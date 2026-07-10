@@ -39,7 +39,14 @@ export function EditorialPhoto({
       )}
     >
       {hasImage ? (
-        <img src={article.image_url ?? ""} alt={article.title} className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={article.image_url ?? ""}
+          alt={article.title}
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
       ) : null}
       <div className="absolute left-4 top-4 rounded-full border border-accent/25 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-accent backdrop-blur dark:border-white/10 dark:bg-zinc-900/70">
         {article.category?.name ?? "Signal"}

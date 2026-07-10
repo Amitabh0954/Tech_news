@@ -39,7 +39,7 @@ export function ArticleRoute() {
         <ImpactBadge score={data.impact_score} urgency={data.urgency} />
         <div className="flex items-center gap-3">
           <BookmarkButton articleId={data.id} />
-          <ShareButton title={data.title} url={`${window.location.origin}/app/article/${data.slug}`} />
+          <ShareButton title={data.title} url={data.canonical_url} />
           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">
             {data.source.name} · <DateLine timestamp={data.published_at} />
           </div>
@@ -49,7 +49,16 @@ export function ArticleRoute() {
         {data.title}
       </h1>
       {data.image_url ? (
-        <img src={data.image_url} alt={data.title} className="mt-6 max-h-[420px] w-full object-cover" />
+        <div className="relative mt-6 aspect-[21/9] w-full overflow-hidden bg-black/5 dark:bg-white/5">
+          <img
+            src={data.image_url}
+            alt={data.title}
+            className="absolute inset-0 h-full w-full object-cover"
+            onError={(event) => {
+              event.currentTarget.parentElement?.style.setProperty("display", "none");
+            }}
+          />
+        </div>
       ) : null}
       <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_280px]">
         <div className="space-y-6">

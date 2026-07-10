@@ -1,8 +1,11 @@
 import { Outlet } from "react-router-dom";
 
 import { TopHeader } from "@/components/layout/top-header";
+import { useLiveUpdates } from "@/features/articles/use-live-updates";
 
 export function AppShell() {
+  useLiveUpdates();
+
   return (
     <div className="min-h-screen bg-background text-zinc-900 dark:text-slate-100">
       <TopHeader />

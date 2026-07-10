@@ -5,6 +5,7 @@ import { CriticalAlertStrip } from "@/components/news/critical-alert-strip";
 import { FrontPageLead } from "@/components/news/front-page-lead";
 import { FrontPageSecondary } from "@/components/news/front-page-secondary";
 import { NewsRiver } from "@/components/news/news-river";
+import { NewStoriesBanner } from "@/components/news/new-stories-banner";
 import { StoryRow } from "@/components/news/story-row";
 import { useCriticalStories, useNewsFeed } from "@/features/articles/queries";
 import { useUIStore } from "@/stores/ui-store";
@@ -59,6 +60,8 @@ export function HomeRoute() {
           tooling shifts shaping engineering execution.
         </p>
       </section>
+
+      <NewStoriesBanner queryKeys={[["news-feed", activeCategory], ["critical-stories"]]} />
 
       {criticalStories?.length ? <CriticalAlertStrip items={criticalStories} /> : null}
 

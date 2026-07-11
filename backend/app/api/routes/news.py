@@ -13,6 +13,7 @@ async def list_news(
     urgency: str | None = Query(default=None),
     q: str | None = Query(default=None),
     source_type: str | None = Query(default=None),
+    days: int | None = Query(default=None, ge=1, le=365),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=50),
     service: NewsService = Depends(get_news_service),
@@ -22,6 +23,7 @@ async def list_news(
         urgency=urgency,
         query=q,
         source_type=source_type,
+        days=days,
         page=page,
         page_size=page_size,
     )

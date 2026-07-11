@@ -13,6 +13,12 @@ from app.schemas.news import ArticleDetail
 
 logger = logging.getLogger(__name__)
 
+# arXiv papers and trending GitHub repos are curated feeds meant only for the
+# dedicated Papers/Repos tabs (see PapersRoute/ReposRoute, which explicitly pass
+# source_type="paper"/"github-trending"). Without this exclusion they'd also flood
+# Top Stories/Latest/Critical any time a caller doesn't ask for a specific source_type.
+CURATED_ONLY_SOURCE_TYPES = ("paper", "github-trending")
+
 
 class NewsRepository:
     def __init__(self, db: AsyncSession) -> None:
@@ -37,6 +43,7 @@ class NewsRepository:
         urgency: str | None = None,
         query: str | None = None,
         source_type: str | None = None,
+        days: int | None = None,
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[Sequence[Article], int]:
@@ -51,9 +58,20 @@ class NewsRepository:
             count_stmt = count_stmt.join(Source, Source.id == Article.source_id).where(
                 Source.source_type == source_type
             )
+        else:
+            stmt = stmt.join(Source, Source.id == Article.source_id).where(
+                Source.source_type.notin_(CURATED_ONLY_SOURCE_TYPES)
+            )
+            count_stmt = count_stmt.join(Source, Source.id == Article.source_id).where(
+                Source.source_type.notin_(CURATED_ONLY_SOURCE_TYPES)
+            )
         if urgency:
             stmt = stmt.where(Article.urgency == urgency)
             count_stmt = count_stmt.where(Article.urgency == urgency)
+        if days is not None:
+            cutoff = datetime.now(UTC) - timedelta(days=days)
+            stmt = stmt.where(Article.published_at >= cutoff)
+            count_stmt = count_stmt.where(Article.published_at >= cutoff)
         if query:
             query_filter = or_(
                 Article.title.ilike(f"%{query}%"),
@@ -75,7 +93,9 @@ class NewsRepository:
     async def list_critical(self, limit: int = 10) -> Sequence[Article]:
         stmt = (
             self._base_query()
+            .join(Source, Source.id == Article.source_id)
             .where(or_(Article.urgency == "critical", Article.impact_score >= 8.5))
+            .where(Source.source_type.notin_(CURATED_ONLY_SOURCE_TYPES))
             .limit(limit)
         )
         return (await self.db.execute(stmt)).scalars().unique().all()
@@ -270,7 +290,15 @@ class NewsRepository:
             existing.discussion_url = article.discussion_url
             existing.urgency = article.urgency
             existing.impact_score = float(article.impact_score)
-            existing.published_at = article.published_at
+            # Deliberately NOT overwriting published_at here. Sources routinely
+            # re-list the same story across ingestion cycles/days (a blog's RSS feed
+            # keeps last week's post in its feed, GitHub trending re-surfaces a repo,
+            # etc.), and when the feed itself has no real per-entry date the pipeline
+            # falls back to "now" (see IngestionPipeline.run). Refreshing published_at
+            # on every re-sighting made already-seen stories keep jumping back to the
+            # top of Top Stories/Latest as if freshly published. Freezing it to the
+            # value recorded the first time this canonical_url was seen keeps the feed
+            # newest-first by actual first-seen time instead of by last-re-fetch time.
             existing.ingested_at = datetime.now(UTC)
             existing.source_id = source.id
             existing.category_id = category.id if category else None

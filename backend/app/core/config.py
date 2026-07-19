@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     gemma_max_new_tokens: int = 512
     gemma_temperature: float = 0.1
     gemma_top_p: float = 0.9
+    groq_api_key: str | None = None
+    groq_model: str = "llama-3.3-70b-versatile"
     github_token: str | None = None
     github_repository_queries: list[str] = ["ai", "kubernetes", "typescript", "github actions security"]
     github_repository_limit_per_query: int = 3

@@ -224,24 +224,41 @@ def score_article_impact(
         is_infra = ranked.category_name in {"Infra", "Cloud"}
         is_ai = ranked.category_name == "AI"
 
-        # Off-category factors get a low baseline rather than a fraction of the same
-        # ranked.impact_score — fractional scaling makes every factor track one number,
-        # which regresses the final weighted score toward the mean regardless of how
-        # different two stories actually are. A sharp on/off contrast here is what lets
-        # a genuine security incident land near 9-10 while a routine tooling post lands
-        # near 4-5, instead of everything clustering in the 6-7 band.
+        # Off-category factors get a small baseline proportional to the story's own general
+        # relevance (capped well below what a genuine category match would score) instead of
+        # one flat constant for every unrelated story — a mildly-relevant tooling post and a
+        # completely generic one no longer land on the exact same number here, while a real
+        # security/infra/AI match still clearly stands apart from either.
+        def _off_category_baseline(cap: float) -> float:
+            return round(min(cap, ranked.relevance_score * 0.3), 2)
+
         factors = ImpactFactors(
             ecosystem_reach=max(ranked.relevance_score, engagement),
-            security_severity=ranked.impact_score if is_security else 2.0,
+            security_severity=ranked.impact_score if is_security else _off_category_baseline(3.0),
             developer_impact=min(10.0, round(ranked.impact_score * 0.9 + len(ranked.affected_engineer_types) * 0.3, 2)),
-            infra_relevance=ranked.impact_score if is_infra else 2.5,
+            infra_relevance=ranked.impact_score if is_infra else _off_category_baseline(3.5),
             enterprise_relevance=round(source.trust_score * 0.7 + ranked.impact_score * 0.3, 2),
-            urgency={"critical": 10.0, "high": 7.5, "medium": 5.0, "low": 2.0}[ranked.urgency],
+            # Blended with the continuous ranked.impact_score rather than a pure 4-rung step
+            # function, so two "high"-urgency stories with different underlying signal
+            # strength don't score identically on this factor.
+            urgency=round(
+                {"critical": 10.0, "high": 7.5, "medium": 5.0, "low": 2.0}[ranked.urgency] * 0.7
+                + ranked.impact_score * 0.3,
+                2,
+            ),
             novelty=recency,
-            ai_ecosystem_importance=ranked.impact_score if is_ai else 1.5,
-            downstream_dependency_risk=ranked.impact_score if is_security else 2.0,
+            ai_ecosystem_importance=ranked.impact_score if is_ai else _off_category_baseline(2.5),
+            downstream_dependency_risk=ranked.impact_score if is_security else _off_category_baseline(3.0),
         )
-        impact_score = _impact_scorer.score(factors)
+        # Whichever dimension actually matches this story's category gets extra weight in
+        # the final score (see ImpactScoringService.score) instead of being averaged down by
+        # the other 8 mostly-baseline factors.
+        dominant = (
+            "security_severity"
+            if is_security
+            else "infra_relevance" if is_infra else "ai_ecosystem_importance" if is_ai else None
+        )
+        impact_score = _impact_scorer.score(factors, dominant=dominant)
 
         logger.info(
             "impact_score computed: score=%.2f category=%s urgency=%s recency=%.2f engagement=%.2f source_trust=%.1f",

@@ -25,6 +25,7 @@ class User(TimestampMixin, Base):
     theme: Mapped[str] = mapped_column(String(20), default="dark")
 
     bookmarks: Mapped[list["Bookmark"]] = relationship(back_populates="user")
+    dismissed_articles: Mapped[list["DismissedArticle"]] = relationship(back_populates="user")
 
 
 class PasswordResetToken(Base):
@@ -103,6 +104,7 @@ class Article(TimestampMixin, Base):
     summary: Mapped["Summary | None"] = relationship(back_populates="article", uselist=False)
     impact: Mapped["ImpactScore | None"] = relationship(back_populates="article", uselist=False)
     bookmarks: Mapped[list["Bookmark"]] = relationship(back_populates="article")
+    dismissed_by: Mapped[list["DismissedArticle"]] = relationship(back_populates="article")
 
 
 class Summary(TimestampMixin, Base):
@@ -117,6 +119,12 @@ class Summary(TimestampMixin, Base):
     who_is_affected: Mapped[str] = mapped_column(Text())
     immediate_risks: Mapped[str] = mapped_column(Text())
     long_term_implications: Mapped[str] = mapped_column(Text())
+    # Populated on-demand by the Groq-backed "Summary" button (POST /news/{slug}/summarize),
+    # not at ingestion time — nullable because most rows won't have this until a reader asks.
+    key_points: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    # Short prose paragraph shown above the bullet points — same on-demand/nullable story as
+    # key_points above.
+    overview: Mapped[str | None] = mapped_column(Text(), nullable=True)
 
     article: Mapped["Article"] = relationship(back_populates="summary")
 
@@ -154,3 +162,14 @@ class Bookmark(Base):
 
     user: Mapped["User"] = relationship(back_populates="bookmarks")
     article: Mapped["Article"] = relationship(back_populates="bookmarks")
+
+
+class DismissedArticle(Base):
+    __tablename__ = "dismissed_articles"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    article_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("articles.id"), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+    user: Mapped["User"] = relationship(back_populates="dismissed_articles")
+    article: Mapped["Article"] = relationship(back_populates="dismissed_by")

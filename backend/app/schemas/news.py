@@ -28,6 +28,8 @@ class SummaryRead(APIModel):
     who_is_affected: str
     immediate_risks: str
     long_term_implications: str
+    key_points: list[str] | None = None
+    overview: str | None = None
 
 
 class ImpactScoreRead(APIModel):
@@ -89,4 +91,8 @@ class TrendingTopic(BaseModel):
 
 
 class BookmarkCreate(BaseModel):
+    article_id: UUID
+
+
+class DismissalCreate(BaseModel):
     article_id: UUID

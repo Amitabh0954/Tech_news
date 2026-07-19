@@ -3,6 +3,8 @@ import json
 from abc import ABC, abstractmethod
 from typing import Any
 
+import httpx
+
 from app.core.config import settings
 
 
@@ -213,3 +215,80 @@ Tags: {payload.get("tags", [])}
 
 
 GemmaProvider = TransformersGemmaProvider
+
+
+class GroqProvider(BaseLLMProvider):
+    """On-demand point-wise article summaries via Groq's hosted Llama models.
+
+    Unlike TransformersGemmaProvider (a local/HF-hosted model used for background
+    ingestion-time scoring), this is a plain REST call — Groq's API is
+    OpenAI-compatible, so no extra SDK dependency is needed beyond the httpx client
+    already used elsewhere in this backend.
+    """
+
+    name = "groq"
+
+    _ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
+
+    async def _complete_json(self, prompt: str) -> dict[str, Any]:
+        if not settings.groq_api_key:
+            raise RuntimeError("GROQ_API_KEY is not configured.")
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                self._ENDPOINT,
+                headers={"Authorization": f"Bearer {settings.groq_api_key}"},
+                json={
+                    "model": settings.groq_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.2,
+                    "response_format": {"type": "json_object"},
+                },
+            )
+            response.raise_for_status()
+            raw = response.json()["choices"][0]["message"]["content"]
+
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            start = raw.find("{")
+            end = raw.rfind("}")
+            if start != -1 and end != -1 and end > start:
+                return json.loads(raw[start : end + 1])
+            raise ValueError(f"Groq returned non-JSON output: {raw}")
+
+    async def summarize(self, payload: dict[str, Any]) -> dict[str, Any]:
+        prompt = f"""
+You are summarizing high-signal engineering news for senior software engineers, in point form.
+
+Return strict JSON with keys:
+- overview: a 2 to 4 sentence prose paragraph giving a reader the full picture in one read — what happened, why it matters, and the key implication, written as flowing sentences, not a list
+- key_points: an array of 5 to 8 short, concrete bullet points covering what happened, why it matters, who is affected, and immediate risks/implications — each a single punchy sentence, no fluff
+- what_happened: one concise sentence
+- why_it_matters: one concise sentence
+- who_is_affected: one concise sentence
+- immediate_risks: one concise sentence
+- long_term_implications: one concise sentence
+
+Rules:
+- concise
+- technical
+- no marketing language
+- no markdown
+
+Article:
+title: {payload.get("title", "")}
+excerpt: {payload.get("excerpt", "")}
+content: {payload.get("content", "")}
+source: {payload.get("source", "")}
+"""
+        return await self._complete_json(prompt)
+
+    async def categorize(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError("GroqProvider is only wired up for summarize().")
+
+    async def score_impact(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError("GroqProvider is only wired up for summarize().")
+
+    async def classify_relevance(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError("GroqProvider is only wired up for summarize().")

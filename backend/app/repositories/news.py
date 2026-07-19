@@ -8,7 +8,7 @@ from sqlalchemy import Select, delete, desc, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.models.news import Article, Bookmark, Category, ImpactScore, Source, Summary
+from app.models.news import Article, Bookmark, Category, DismissedArticle, ImpactScore, Source, Summary
 from app.schemas.news import ArticleDetail
 
 logger = logging.getLogger(__name__)
@@ -429,3 +429,36 @@ class BookmarkRepository:
             .order_by(desc(Bookmark.created_at))
         )
         return (await self.db.execute(stmt)).scalars().unique().all()
+
+
+class DismissedArticleRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self.db = db
+
+    async def create_if_missing(self, user_id: UUID, article_id: UUID) -> DismissedArticle:
+        existing = await self.db.scalar(
+            select(DismissedArticle).where(
+                DismissedArticle.user_id == user_id, DismissedArticle.article_id == article_id
+            )
+        )
+        if existing:
+            return existing
+        dismissed = DismissedArticle(user_id=user_id, article_id=article_id)
+        self.db.add(dismissed)
+        await self.db.commit()
+        await self.db.refresh(dismissed)
+        return dismissed
+
+    async def delete(self, user_id: UUID, article_id: UUID) -> None:
+        dismissed = await self.db.scalar(
+            select(DismissedArticle).where(
+                DismissedArticle.user_id == user_id, DismissedArticle.article_id == article_id
+            )
+        )
+        if dismissed:
+            await self.db.delete(dismissed)
+            await self.db.commit()
+
+    async def list_article_ids_for_user(self, user_id: UUID) -> Sequence[UUID]:
+        stmt = select(DismissedArticle.article_id).where(DismissedArticle.user_id == user_id)
+        return (await self.db.execute(stmt)).scalars().all()

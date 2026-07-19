@@ -6,6 +6,7 @@ from app.api.routes import (
     bookmarks,
     categories,
     critical,
+    dismissals,
     ingestion,
     news,
     search,
@@ -23,6 +24,7 @@ api_router.include_router(trending.router, tags=["trending"])
 api_router.include_router(critical.router, tags=["critical"])
 api_router.include_router(search.router, tags=["search"])
 api_router.include_router(bookmarks.router, tags=["bookmarks"])
+api_router.include_router(dismissals.router, tags=["dismissals"])
 api_router.include_router(sources.router, tags=["sources"])
 api_router.include_router(summaries.router, tags=["summaries"])
 api_router.include_router(ingestion.router, tags=["ingestion"])

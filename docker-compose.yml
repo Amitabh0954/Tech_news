@@ -15,7 +15,8 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       APP_NAME: Engineering Intelligence API
       APP_ENV: development

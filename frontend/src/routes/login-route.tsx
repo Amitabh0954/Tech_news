@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import logoIcon from "@/assets/logo-icon.png";
+import logoIconLight from "@/assets/logo-icon-light.png";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -128,9 +130,8 @@ export function LoginRoute() {
         <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
           <div className="space-y-5">
             <div className="inline-flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-full border border-accent/25 bg-panel text-accent shadow-sm">
-                <div className="h-5 w-5 rounded-full border-4 border-dotted border-accent" />
-              </div>
+              <img src={logoIconLight} alt="" className="block h-10 w-10 shrink-0 dark:hidden" />
+              <img src={logoIcon} alt="" className="hidden h-10 w-10 shrink-0 dark:block" />
               <div>
                 <div className="font-heading text-2xl font-semibold tracking-[-0.05em] text-zinc-900 dark:text-white">
                   EngIntel

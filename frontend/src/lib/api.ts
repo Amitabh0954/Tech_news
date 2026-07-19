@@ -37,6 +37,8 @@ export type Summary = {
   who_is_affected: string;
   immediate_risks: string;
   long_term_implications: string;
+  key_points?: string[] | null;
+  overview?: string | null;
 };
 
 export type Impact = {
@@ -162,11 +164,11 @@ export const api = {
         body: JSON.stringify({ credential }),
       }),
   },
-  getNews: (page = 1, pageSize = 8, category?: string | null, sourceType?: string | null) =>
+  getNews: (page = 1, pageSize = 8, category?: string | null, sourceType?: string | null, days?: number | null) =>
     request<PaginatedArticles>(
       `/news?page=${page}&page_size=${pageSize}${category ? `&category=${encodeURIComponent(category)}` : ""}${
         sourceType ? `&source_type=${encodeURIComponent(sourceType)}` : ""
-      }`,
+      }${days ? `&days=${days}` : ""}`,
     ),
   getCritical: () => request<Article[]>("/critical"),
   getTrending: () => request<TrendingTopic[]>("/trending"),
@@ -186,6 +188,23 @@ export const api = {
   removeBookmark: (articleId: string) =>
     request<void>(`/bookmarks/${articleId}`, {
       method: "DELETE",
+      headers: authHeaders(),
+    }),
+  getDismissals: () => request<string[]>("/dismissals", { headers: authHeaders() }),
+  dismissArticle: (articleId: string) =>
+    request<{ status: string }>("/dismissals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ article_id: articleId }),
+    }),
+  removeDismissal: (articleId: string) =>
+    request<void>(`/dismissals/${articleId}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    }),
+  summarizeArticle: (slug: string) =>
+    request<Summary>(`/news/${slug}/summarize`, {
+      method: "POST",
       headers: authHeaders(),
     }),
 };

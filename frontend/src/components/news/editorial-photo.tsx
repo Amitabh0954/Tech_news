@@ -19,22 +19,27 @@ const categoryThemes: Record<string, string> = {
 export function EditorialPhoto({
   article,
   className,
-  compact = false,
+  aspect = "wide",
 }: {
   article: Article;
   className?: string;
-  compact?: boolean;
+  /** "wide" mirrors a wire homepage's lead banner (panoramic on large screens);
+      "grid" is a slightly taller 16:9 used for the river's card grid; "square" is
+      the bigger, squared-off thumbnail used in side-rail lists (Reuters-style). */
+  aspect?: "wide" | "grid" | "square";
 }) {
   const categorySlug = article.category?.slug ?? "research";
   const tone = categoryThemes[categorySlug] ?? categoryThemes.research;
   const hasImage = Boolean(article.image_url?.trim());
+  const aspectClass =
+    aspect === "square" ? "aspect-square" : aspect === "grid" ? "aspect-[16/9]" : "aspect-[16/9] lg:aspect-[21/9]";
 
   return (
     <div
       className={cn(
         "relative overflow-hidden border border-border bg-gradient-to-br dark:border-white/10",
         tone,
-        hasImage ? (compact ? "aspect-square" : "aspect-[16/10] lg:aspect-[16/9]") : compact ? "rounded-3xl bg-white/90 p-5 shadow-sm dark:bg-zinc-950/90" : "rounded-3xl bg-white/95 p-6 shadow-sm dark:bg-zinc-950/95",
+        hasImage ? aspectClass : "rounded-3xl bg-white/95 p-6 shadow-sm dark:bg-zinc-950/95",
         className,
       )}
     >
@@ -51,13 +56,13 @@ export function EditorialPhoto({
       <div className="absolute left-4 top-4 rounded-full border border-accent/25 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-accent backdrop-blur dark:border-white/10 dark:bg-zinc-900/70">
         {article.category?.name ?? "Signal"}
       </div>
-      {/* Title/source are rendered by the calling card (FrontPageLead/FrontPageSecondary)
+      {/* Title/source are rendered by the calling card (FrontPageLead/StoryTile)
           outside this component. Overlaying them again here on top of a real photo produced
           duplicated text with poor contrast against busy images — only show it for the
           no-image gradient-card treatment, where this text is the card's only content. */}
       {!hasImage ? (
         <div className="relative mx-4 mt-3 text-xl font-semibold leading-tight tracking-[-0.04em] text-zinc-950 dark:text-white lg:text-2xl">
-          {compact ? article.title.split(" ").slice(0, 5).join(" ") : article.title}
+          {article.title}
         </div>
       ) : null}
     </div>

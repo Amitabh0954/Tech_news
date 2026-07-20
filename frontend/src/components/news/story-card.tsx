@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { Article } from "@/lib/api";
 import { ImpactBadge } from "@/components/ui/impact-badge";
 import { BookmarkButton } from "@/components/ui/bookmark-button";
+import { CardMenu } from "@/components/ui/card-menu";
 import { TagPill } from "@/components/ui/tag-pill";
 import { DateLine } from "@/components/news/article-primitives";
 
@@ -15,7 +16,10 @@ export function StoryCard({ article }: { article: Article }) {
             <ImpactBadge score={article.impact_score} urgency={article.urgency} />
             {article.category ? <TagPill label={article.category.name} /> : null}
           </div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">{article.source.name}</div>
+          <div className="flex items-center gap-2">
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-slate-500">{article.source.name}</div>
+            <CardMenu articleId={article.id} />
+          </div>
         </div>
         <h3 className="text-xl font-semibold leading-tight text-zinc-900 dark:text-white">{article.title}</h3>
         <p className="mt-3 text-sm leading-5 text-zinc-700 dark:text-slate-300">

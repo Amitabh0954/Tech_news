@@ -1,11 +1,15 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "@/lib/api";
+import { api, type Article } from "@/lib/api";
 
-export function useNewsFeed(category?: string | null) {
+export function useNewsFeed(category?: string | null, days?: number | null) {
   return useInfiniteQuery({
-    queryKey: ["news-feed", category],
-    queryFn: ({ pageParam }) => api.getNews(pageParam as number, 8, category),
+    queryKey: ["news-feed", category, days],
+    // 16 rather than 8: the homepage's featured rail alone (lead + 4 secondary + up to
+    // 8 filler rows) can claim 13 of the top slots, so an 8-item first page left the
+    // river running dry until the next fetch. A bigger first page keeps both the
+    // featured rail and the initial river populated without an extra round trip.
+    queryFn: ({ pageParam }) => api.getNews(pageParam as number, 16, category, null, days),
     initialPageParam: 1,
     staleTime: 1000 * 60,
     gcTime: 1000 * 60 * 30,
@@ -108,6 +112,19 @@ export function useArticle(slug: string) {
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
+  });
+}
+
+export function useSummarizeArticle(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api.summarizeArticle(slug),
+    onSuccess: (summary) => {
+      queryClient.setQueryData<Article | undefined>(["article", slug], (article) =>
+        article ? { ...article, summary } : article,
+      );
+    },
   });
 }
 

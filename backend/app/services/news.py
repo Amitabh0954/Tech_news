@@ -1,4 +1,5 @@
 import logging
+from datetime import UTC, datetime, timedelta
 
 from app.repositories.news import NewsRepository, TaxonomyRepository
 from app.schemas.news import ArticleSuggestion, PaginatedArticles
@@ -27,6 +28,7 @@ class NewsService:
         urgency: str | None = None,
         query: str | None = None,
         source_type: str | None = None,
+        days: int | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedArticles:
@@ -37,6 +39,9 @@ class NewsService:
             items = [item for item in items if item.source.source_type == source_type]
         if urgency:
             items = [item for item in items if item.urgency == urgency]
+        if days is not None:
+            cutoff = datetime.now(UTC) - timedelta(days=days)
+            items = [item for item in items if item.published_at >= cutoff]
         if query:
             needle = query.lower()
             items = [
@@ -58,6 +63,7 @@ class NewsService:
         urgency: str | None = None,
         query: str | None = None,
         source_type: str | None = None,
+        days: int | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedArticles:
@@ -68,19 +74,32 @@ class NewsService:
                 urgency=urgency,
                 query=query,
                 source_type=source_type,
+                days=days,
                 limit=page_size,
                 offset=offset,
             )
         except Exception:
             logger.exception("failed to read articles from the database, serving static demo feed")
             return self._demo_feed(
-                category=category, urgency=urgency, query=query, source_type=source_type, page=page, page_size=page_size
+                category=category,
+                urgency=urgency,
+                query=query,
+                source_type=source_type,
+                days=days,
+                page=page,
+                page_size=page_size,
             )
 
         if not rows:
             logger.info("no cached articles yet for this filter, serving static demo feed while ingestion catches up")
             return self._demo_feed(
-                category=category, urgency=urgency, query=query, source_type=source_type, page=page, page_size=page_size
+                category=category,
+                urgency=urgency,
+                query=query,
+                source_type=source_type,
+                days=days,
+                page=page,
+                page_size=page_size,
             )
 
         next_cursor = str(page + 1) if offset + page_size < total else None

@@ -47,7 +47,7 @@ function FilterDropdown({
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         className={`rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent/10 hover:text-accent ${
-          isOpen ? "bg-accent/10 text-accent" : "text-zinc-700 dark:text-slate-200"
+          isOpen ? "bg-accent/10 text-accent" : "text-slate-700 dark:text-slate-200"
         }`}
       >
         Topic
@@ -63,7 +63,7 @@ function FilterDropdown({
                   setIsOpen(false);
                 }}
                 className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent/10 ${
-                  activeCategory === null ? "text-accent" : "text-zinc-800 dark:text-slate-100"
+                  activeCategory === null ? "text-accent" : "text-slate-800 dark:text-slate-100"
                 }`}
               >
                 All signal
@@ -78,7 +78,7 @@ function FilterDropdown({
                     setIsOpen(false);
                   }}
                   className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent/10 ${
-                    activeCategory === category.slug ? "text-accent" : "text-zinc-800 dark:text-slate-100"
+                    activeCategory === category.slug ? "text-accent" : "text-slate-800 dark:text-slate-100"
                   }`}
                 >
                   {category.name}
@@ -109,7 +109,7 @@ function DateDropdown({ activeDays, onSelect }: { activeDays: number | null; onS
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         className={`rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent/10 hover:text-accent ${
-          isOpen || activeDays ? "bg-accent/10 text-accent" : "text-zinc-700 dark:text-slate-200"
+          isOpen || activeDays ? "bg-accent/10 text-accent" : "text-slate-700 dark:text-slate-200"
         }`}
       >
         {activeDays ? activeLabel : "Date"}
@@ -126,7 +126,7 @@ function DateDropdown({ activeDays, onSelect }: { activeDays: number | null; onS
                     setIsOpen(false);
                   }}
                   className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent/10 ${
-                    activeDays === option.days ? "text-accent" : "text-zinc-800 dark:text-slate-100"
+                    activeDays === option.days ? "text-accent" : "text-slate-800 dark:text-slate-100"
                   }`}
                 >
                   {option.label}
@@ -176,8 +176,8 @@ function SearchBar() {
           }
         }}
       >
-        <label className="flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-4 py-2.5 text-sm text-zinc-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300">
-          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-zinc-500 dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <label className="flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2.5 text-sm text-slate-600 shadow-sm transition-shadow duration-200 focus-within:border-accent/40 focus-within:shadow-[var(--search-glow)] dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300">
+          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8">
             <circle cx="11" cy="11" r="6" />
             <path d="M20 20l-4.2-4.2" />
           </svg>
@@ -193,7 +193,7 @@ function SearchBar() {
               }
             }}
             placeholder="Search signals"
-            className="w-full bg-transparent outline-none placeholder:text-zinc-400 dark:placeholder:text-slate-500"
+            className="w-full bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </label>
       </form>
@@ -201,7 +201,7 @@ function SearchBar() {
       {showDropdown ? (
         <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-black/10 bg-white/95 shadow-lg backdrop-blur dark:border-white/10 dark:bg-zinc-900/95">
           {isLoading ? (
-            <div className="px-4 py-3 text-sm text-zinc-500 dark:text-slate-400">Searching…</div>
+            <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">Searching…</div>
           ) : suggestions?.length ? (
             <ul>
               {suggestions.map((suggestion) => (
@@ -215,9 +215,9 @@ function SearchBar() {
                     }}
                     className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left text-sm hover:bg-accent/10"
                   >
-                    <span className="truncate text-zinc-800 dark:text-slate-100">{suggestion.title}</span>
+                    <span className="truncate text-slate-800 dark:text-slate-100">{suggestion.title}</span>
                     {suggestion.category ? (
-                      <span className="text-[11px] uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-500">
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-500">
                         {suggestion.category.name}
                       </span>
                     ) : null}
@@ -235,7 +235,7 @@ function SearchBar() {
               </li>
             </ul>
           ) : (
-            <div className="px-4 py-3 text-sm text-zinc-500 dark:text-slate-400">No matches yet</div>
+            <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">No matches yet</div>
           )}
         </div>
       ) : null}
@@ -289,16 +289,19 @@ export function TopHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70">
+    <header
+      className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70"
+      style={{ backgroundImage: "var(--nav-surface)" }}
+    >
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-8">
         <Link to="/app" className="flex items-center gap-3">
           <img src={logoIconLight} alt="" className="block h-10 w-10 shrink-0 dark:hidden" />
           <img src={logoIcon} alt="" className="hidden h-10 w-10 shrink-0 dark:block" />
           <div>
-            <div className="font-heading text-2xl font-semibold tracking-[-0.05em] text-zinc-900 dark:text-white sm:text-[2rem]">
+            <div className="font-heading text-2xl font-semibold tracking-[-0.05em] text-slate-900 dark:text-white sm:text-[2rem]">
               EngIntel
             </div>
-            <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-500">
               Engineering wire
             </div>
           </div>
@@ -307,7 +310,7 @@ export function TopHeader() {
         <div className="flex flex-1 flex-wrap items-center justify-end gap-3 lg:gap-4">
           <SearchBar />
 
-          <nav className="hidden items-center gap-2 text-sm font-medium text-zinc-700 md:flex dark:text-slate-200">
+          <nav className="hidden items-center gap-2 text-sm font-medium text-slate-700 md:flex dark:text-slate-200">
             <NavLink
               to="/app"
               end
@@ -363,7 +366,7 @@ export function TopHeader() {
               onClick={() => setIsMobileMenuOpen((open) => !open)}
               aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMobileMenuOpen}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-black/10 bg-white/80 text-zinc-700 dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-200 md:hidden"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-black/10 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-200 md:hidden"
             >
               {isMobileMenuOpen ? (
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -381,7 +384,7 @@ export function TopHeader() {
 
       {isMobileMenuOpen ? (
         <nav className="max-h-[calc(100vh-72px)] overflow-y-auto border-t border-black/10 bg-white/95 px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/95 md:hidden">
-          <div className="flex flex-col gap-1 text-sm font-medium text-zinc-700 dark:text-slate-200">
+          <div className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
             <NavLink
               to="/app"
               end
@@ -413,7 +416,7 @@ export function TopHeader() {
           </div>
 
           <div className="mt-4 border-t border-black/10 pt-4 dark:border-white/10">
-            <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">
+            <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-500">
               Categories
             </div>
             <div className="flex flex-col gap-1">
@@ -421,7 +424,7 @@ export function TopHeader() {
                 type="button"
                 onClick={() => handleCategoryClick(null)}
                 className={`rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
-                  activeCategory === null ? "bg-accent/10 text-accent" : "text-zinc-700 hover:bg-accent/10 dark:text-slate-200"
+                  activeCategory === null ? "bg-accent/10 text-accent" : "text-slate-700 hover:bg-accent/10 dark:text-slate-200"
                 }`}
               >
                 All signal
@@ -434,7 +437,7 @@ export function TopHeader() {
                   className={`rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
                     activeCategory === category.slug
                       ? "bg-accent/10 text-accent"
-                      : "text-zinc-700 hover:bg-accent/10 dark:text-slate-200"
+                      : "text-slate-700 hover:bg-accent/10 dark:text-slate-200"
                   }`}
                 >
                   {category.name}
@@ -444,7 +447,7 @@ export function TopHeader() {
           </div>
 
           <div className="mt-4 border-t border-black/10 pt-4 dark:border-white/10">
-            <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">
+            <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-500">
               Date
             </div>
             <div className="flex flex-col gap-1">
@@ -454,7 +457,7 @@ export function TopHeader() {
                   type="button"
                   onClick={() => handleDateClick(option.days)}
                   className={`rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
-                    activeDays === option.days ? "bg-accent/10 text-accent" : "text-zinc-700 hover:bg-accent/10 dark:text-slate-200"
+                    activeDays === option.days ? "bg-accent/10 text-accent" : "text-slate-700 hover:bg-accent/10 dark:text-slate-200"
                   }`}
                 >
                   {option.label}

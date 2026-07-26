@@ -16,7 +16,7 @@ export function BookmarkButton({ articleId }: { articleId: string }) {
       className={`rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] transition-colors disabled:opacity-60 ${
         isBookmarked
           ? "border-accent/40 bg-accent/10 text-accent"
-          : "border-border text-zinc-500 dark:border-white/10 dark:text-slate-400"
+          : "border-border text-slate-500 dark:border-white/10 dark:text-slate-400"
       }`}
     >
       {isBookmarked ? "Saved" : "Save"}

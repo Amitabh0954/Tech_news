@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 const urgencyStyles: Record<string, string> = {
-  critical: "border-critical/50 bg-critical/10 text-critical",
-  high: "border-high/50 bg-high/10 text-high",
-  medium: "border-accent/30 bg-accent/10 text-accent",
-  low: "border-low/50 bg-low/10 text-low",
+  critical: "text-critical",
+  high: "text-high",
+  medium: "text-accent",
+  low: "text-low",
 };
 
 export function ImpactBadge({
@@ -16,13 +16,10 @@ export function ImpactBadge({
 }) {
   return (
     <div
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em]",
-        urgencyStyles[urgency] ?? urgencyStyles.medium,
-      )}
+      className={cn("inline-flex items-center gap-1.5 text-sm", urgencyStyles[urgency] ?? urgencyStyles.medium)}
     >
-      <span>{urgency}</span>
-      <span className="font-mono">{score.toFixed(1)}</span>
+      <span className="font-heading font-semibold capitalize">{urgency}</span>
+      <span className="font-mono font-semibold">{score.toFixed(1)}</span>
     </div>
   );
 }

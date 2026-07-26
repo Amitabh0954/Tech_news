@@ -47,24 +47,23 @@ export function HomeRoute() {
   const secondaryStories = featuredCandidates.slice(1, 5);
   // The secondary rail (4 image cards) runs taller than the lead's text+image column,
   // which left dead space under the lead. Filling with more compact rows (rather than
-  // shrinking the secondary rail) is the fix that actually keeps both columns level —
-  // pull enough candidates that the left column can grow to roughly match the right.
-  const leadFillerStories = featuredCandidates.slice(5, 12);
-  const featuredIds = new Set(
-    [leadStory?.id, ...secondaryStories.map((story) => story.id), ...leadFillerStories.map((story) => story.id)].filter(
-      Boolean,
-    ),
-  );
+  // shrinking the secondary rail) is the fix that actually keeps both columns level.
+  // Draw filler from the full feed (not just the RECENCY_WINDOW slice used for
+  // lead/secondary picks) so there's enough material to actually fill the gap even
+  // when few stories qualify as "recent."
+  const usedIds = new Set([leadStory?.id, ...secondaryStories.map((story) => story.id)].filter(Boolean));
+  const leadFillerStories = items.filter((item) => !usedIds.has(item.id)).slice(0, 13);
+  const featuredIds = new Set([...usedIds, ...leadFillerStories.map((story) => story.id)]);
   const riverStories = items.filter((item) => !featuredIds.has(item.id));
 
   return (
     <div className="space-y-8">
-      <section className="border-b border-border pb-6 dark:border-white/10">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Daily intelligence brief</div>
-        <h1 className="mt-3 max-w-4xl font-heading text-4xl font-semibold leading-[1.05] tracking-[-0.07em] text-zinc-900 dark:text-white sm:text-5xl">
+      <section className="pb-6">
+        <div className="font-heading text-sm font-semibold text-accent">Daily intelligence brief</div>
+        <h1 className="mt-3 max-w-4xl font-heading text-4xl font-semibold leading-[1.05] tracking-[-0.07em] text-slate-900 dark:text-white sm:text-5xl">
           Executive insight for the modern engineering leader
         </h1>
-        <p className="mt-4 max-w-3xl text-base leading-8 text-zinc-700 dark:text-slate-300">
+        <p className="mt-4 max-w-3xl text-base leading-8 text-slate-700 dark:text-slate-300">
           High-signal coverage of AI advances, security incidents, cloud platform changes, supply-chain risk, and the
           tooling shifts shaping engineering execution.
         </p>
@@ -80,7 +79,7 @@ export function HomeRoute() {
                 next.delete("days");
                 navigate(next.toString() ? `/app?${next.toString()}` : "/app");
               }}
-              className="text-zinc-500 hover:text-accent dark:text-slate-400"
+              className="text-slate-500 hover:text-accent dark:text-slate-400"
             >
               Clear
             </button>
@@ -99,7 +98,7 @@ export function HomeRoute() {
           ))}
         </div>
       ) : isError ? (
-        <div className="border border-critical/30 bg-critical/5 p-8 text-zinc-700 dark:text-slate-200">
+        <div className="border border-critical/30 bg-critical/5 p-8 text-slate-700 dark:text-slate-200">
           <div className="text-sm font-semibold text-critical">News feed unavailable</div>
           <div className="mt-2 text-sm">
             {(error as Error | undefined)?.message ??
@@ -112,14 +111,32 @@ export function HomeRoute() {
             <div>
               <FrontPageLead article={leadStory} />
               {leadFillerStories.length ? (
-                <div className="mt-6 border-t border-border pt-2 dark:border-white/10">
-                  {leadFillerStories.map((article) => (
-                    <StoryRow key={article.id} article={article} />
-                  ))}
+                <div
+                  className="mt-6 border-t border-transparent pt-6"
+                  style={{ borderImage: "linear-gradient(to right, transparent, rgb(var(--accent) / 0.5), transparent) 1" }}
+                >
+                  {/* A 4x2 grid of image tiles up front instead of straight into text rows —
+                      the all-text row list read as a wall of text next to the image-led
+                      secondary rail, so leading with pictures here balances the page. */}
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
+                    {leadFillerStories.slice(0, 8).map((article) => (
+                      <StoryTile key={article.id} article={article} />
+                    ))}
+                  </div>
+                  {leadFillerStories.length > 8 ? (
+                    <div className="mt-2">
+                      {leadFillerStories.slice(8).map((article) => (
+                        <StoryRow key={article.id} article={article} />
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
-            <div className="space-y-8 border-l border-border pl-0 xl:pl-8 dark:border-white/10">
+            <div
+              className="space-y-8 border-l border-transparent pl-0 xl:pl-8"
+              style={{ borderImage: "linear-gradient(to bottom, transparent, rgb(var(--accent) / 0.5), transparent) 1" }}
+            >
               {secondaryStories.map((article) => (
                 <StoryTile key={article.id} article={article} imageAspect="square" />
               ))}
@@ -134,7 +151,7 @@ export function HomeRoute() {
           />
         </div>
       ) : (
-        <div className="border border-border bg-panel p-8 text-zinc-600 dark:border-white/10 dark:text-slate-300">
+        <div className="border border-border bg-panel p-8 text-slate-600 dark:border-white/10 dark:text-slate-300">
           No stories were returned by the configured sources yet.
         </div>
       )}

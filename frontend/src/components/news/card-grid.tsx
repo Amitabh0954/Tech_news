@@ -42,7 +42,7 @@ export function CardGrid({
       </div>
       <div ref={sentinelRef} className="h-8" />
       {isFetchingNextPage ? (
-        <div className="pt-4 text-sm text-zinc-500 dark:text-slate-500">Loading more...</div>
+        <div className="pt-4 text-sm text-slate-500 dark:text-slate-500">Loading more...</div>
       ) : null}
     </div>
   );

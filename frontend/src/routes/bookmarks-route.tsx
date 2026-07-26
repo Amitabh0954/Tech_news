@@ -6,11 +6,11 @@ export function BookmarksRoute() {
 
   return (
     <section className="border border-border bg-panel p-6 dark:border-white/10">
-      <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">Bookmarks</div>
-      <h1 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.05em] text-zinc-900 dark:text-white">
+      <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-500">Bookmarks</div>
+      <h1 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.05em] text-slate-900 dark:text-white">
         Saved articles
       </h1>
-      <p className="mt-3 text-sm leading-7 text-zinc-700 dark:text-slate-300">
+      <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
         Stories you save are stored on your account and stay available across devices.
       </p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -25,7 +25,7 @@ export function BookmarksRoute() {
         ) : bookmarks?.length ? (
           bookmarks.map((article) => <StoryCard key={article.id} article={article} />)
         ) : (
-          <div className="col-span-full border border-dashed border-border px-4 py-6 text-sm text-zinc-500 dark:border-white/10 dark:text-slate-400">
+          <div className="col-span-full border border-dashed border-border px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
             No saved stories yet. Tap "Save" on any article to add it here.
           </div>
         )}

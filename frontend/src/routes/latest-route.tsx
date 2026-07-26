@@ -11,10 +11,10 @@ export function LatestRoute() {
     <div className="space-y-8">
       <section className="border-b border-border pb-6 dark:border-white/10">
         <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Live feed</div>
-        <h1 className="mt-3 max-w-4xl font-heading text-4xl font-semibold leading-[1.05] tracking-[-0.07em] text-zinc-900 dark:text-white sm:text-5xl">
+        <h1 className="mt-3 max-w-4xl font-heading text-4xl font-semibold leading-[1.05] tracking-[-0.07em] text-slate-900 dark:text-white sm:text-5xl">
           Latest
         </h1>
-        <p className="mt-4 max-w-3xl text-base leading-8 text-zinc-700 dark:text-slate-300">
+        <p className="mt-4 max-w-3xl text-base leading-8 text-slate-700 dark:text-slate-300">
           The newest stories as they're ingested, in strict chronological order.
         </p>
       </section>
@@ -28,7 +28,7 @@ export function LatestRoute() {
           ))}
         </div>
       ) : isError ? (
-        <div className="border border-critical/30 bg-critical/5 p-8 text-zinc-700 dark:text-slate-200">
+        <div className="border border-critical/30 bg-critical/5 p-8 text-slate-700 dark:text-slate-200">
           <div className="text-sm font-semibold text-critical">Latest feed unavailable</div>
           <div className="mt-2 text-sm">
             {(error as Error | undefined)?.message ??
@@ -44,7 +44,7 @@ export function LatestRoute() {
           fetchNextPage={() => void fetchNextPage()}
         />
       ) : (
-        <div className="border border-border bg-panel p-8 text-zinc-600 dark:border-white/10 dark:text-slate-300">
+        <div className="border border-border bg-panel p-8 text-slate-600 dark:border-white/10 dark:text-slate-300">
           No stories were returned by the configured sources yet.
         </div>
       )}

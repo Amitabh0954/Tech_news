@@ -7,7 +7,7 @@ const categoryThemes: Record<string, string> = {
   cloud: "from-sky-100 via-white to-cyan-100 dark:from-sky-950/30 dark:via-zinc-900 dark:to-cyan-950/30",
   oss: "from-emerald-100 via-white to-lime-100 dark:from-emerald-950/30 dark:via-zinc-900 dark:to-lime-950/30",
   tooling: "from-violet-100 via-white to-fuchsia-100 dark:from-violet-950/30 dark:via-zinc-900 dark:to-fuchsia-950/30",
-  research: "from-stone-100 via-white to-zinc-100 dark:from-stone-900 dark:via-zinc-900 dark:to-neutral-900",
+  research: "from-stone-100 via-white to-slate-100 dark:from-stone-900 dark:via-zinc-900 dark:to-neutral-900",
   infra: "from-teal-100 via-white to-emerald-100 dark:from-teal-950/30 dark:via-zinc-900 dark:to-emerald-950/30",
   "supply-chain": "from-orange-100 via-white to-red-100 dark:from-orange-950/30 dark:via-zinc-900 dark:to-red-950/30",
   mobile: "from-indigo-100 via-white to-purple-100 dark:from-indigo-950/30 dark:via-zinc-900 dark:to-purple-950/30",
@@ -39,7 +39,7 @@ export function EditorialPhoto({
       className={cn(
         "relative overflow-hidden border border-border bg-gradient-to-br dark:border-white/10",
         tone,
-        hasImage ? aspectClass : "rounded-3xl bg-white/95 p-6 shadow-sm dark:bg-zinc-950/95",
+        hasImage ? aspectClass : "bg-white/95 p-6 shadow-sm dark:bg-zinc-950/95",
         className,
       )}
     >
@@ -47,21 +47,20 @@ export function EditorialPhoto({
         <img
           src={article.image_url ?? ""}
           alt={article.title}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
       ) : null}
-      <div className="absolute left-4 top-4 rounded-full border border-accent/25 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-accent backdrop-blur dark:border-white/10 dark:bg-zinc-900/70">
-        {article.category?.name ?? "Signal"}
-      </div>
-      {/* Title/source are rendered by the calling card (FrontPageLead/StoryTile)
+      {/* Category is already rendered as plain text by the calling card (FrontPageLead's
+          breadcrumb, StoryTile's label row), so no need to repeat it as an overlay pill here.
+          Title/source are rendered by the calling card (FrontPageLead/StoryTile)
           outside this component. Overlaying them again here on top of a real photo produced
           duplicated text with poor contrast against busy images — only show it for the
           no-image gradient-card treatment, where this text is the card's only content. */}
       {!hasImage ? (
-        <div className="relative mx-4 mt-3 text-xl font-semibold leading-tight tracking-[-0.04em] text-zinc-950 dark:text-white lg:text-2xl">
+        <div className="relative mx-4 mt-3 text-xl font-semibold leading-tight tracking-[-0.04em] text-slate-950 dark:text-white lg:text-2xl">
           {article.title}
         </div>
       ) : null}

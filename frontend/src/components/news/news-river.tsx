@@ -62,10 +62,10 @@ export function NewsRiver({
   return (
     <section className="border-t border-border pt-8 dark:border-white/10">
       <div className="mb-6 flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-slate-500">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-500">
           {title}
         </div>
-        <div className="text-xs text-zinc-500 dark:text-slate-500">{items.length} stories</div>
+        <div className="text-xs text-slate-500 dark:text-slate-500">{items.length} stories</div>
       </div>
 
       <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -84,19 +84,19 @@ export function NewsRiver({
 
       {canAutoLoad ? <div ref={sentinelRef} className="h-8" /> : null}
       {isFetchingNextPage ? (
-        <div className="pt-4 text-sm text-zinc-500 dark:text-slate-500">Loading more engineering signal...</div>
+        <div className="pt-4 text-sm text-slate-500 dark:text-slate-500">Loading more engineering signal...</div>
       ) : hasNextPage && reachedAutoLoadCap ? (
         <div className="flex justify-center pt-6">
           <button
             type="button"
             onClick={() => fetchNextPage()}
-            className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:border-accent/40 hover:text-accent dark:border-white/10 dark:text-slate-200"
+            className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:border-accent/40 hover:text-accent dark:border-white/10 dark:text-slate-200"
           >
             Load more stories
           </button>
         </div>
       ) : !hasNextPage ? (
-        <div className="pt-6 text-center text-sm text-zinc-500 dark:text-slate-500">
+        <div className="pt-6 text-center text-sm text-slate-500 dark:text-slate-500">
           You&apos;re all caught up — that&apos;s every story we&apos;ve got right now.
         </div>
       ) : null}

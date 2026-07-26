@@ -12,7 +12,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      className="w-full rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-accent transition-colors hover:bg-accent/20"
+      className="w-full px-4 py-2.5 text-left text-sm text-slate-800 hover:bg-accent/10 dark:text-slate-100"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       type="button"
     >

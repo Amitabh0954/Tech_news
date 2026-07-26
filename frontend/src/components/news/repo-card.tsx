@@ -24,11 +24,11 @@ export function RepoCard({ article }: { article: Article }) {
           Trending
         </span>
       </div>
-      <h3 className="mt-3 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 dark:text-white">
+      <h3 className="mt-3 line-clamp-2 text-sm font-semibold leading-snug text-slate-900 dark:text-white">
         {article.title}
       </h3>
-      <p className="mt-2 line-clamp-4 text-xs leading-5 text-zinc-600 dark:text-slate-400">{article.excerpt}</p>
-      <div className="mt-3 flex items-center justify-end font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500 dark:text-slate-500">
+      <p className="mt-2 line-clamp-4 text-xs leading-5 text-slate-600 dark:text-slate-400">{article.excerpt}</p>
+      <div className="mt-3 flex items-center justify-end font-mono text-[11px] uppercase tracking-[0.14em] text-slate-500 dark:text-slate-500">
         <DateLine timestamp={article.published_at} />
       </div>
     </a>

@@ -74,7 +74,7 @@ function GoogleSignInButton({ onCredential }: { onCredential: (credential: strin
 
   if (!GOOGLE_CLIENT_ID) {
     return (
-      <div className="rounded-full border border-dashed border-border px-4 py-2.5 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-slate-500">
+      <div className="rounded-full border border-dashed border-border px-4 py-2.5 text-center text-sm text-slate-500 dark:border-white/10 dark:text-slate-500">
         Google sign-in isn&apos;t configured yet
       </div>
     );
@@ -125,7 +125,7 @@ export function LoginRoute() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-zinc-900 dark:text-slate-100">
+    <div className="min-h-screen bg-background text-slate-900 dark:text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col justify-center px-6 py-10 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
           <div className="space-y-5">
@@ -133,22 +133,22 @@ export function LoginRoute() {
               <img src={logoIconLight} alt="" className="block h-10 w-10 shrink-0 dark:hidden" />
               <img src={logoIcon} alt="" className="hidden h-10 w-10 shrink-0 dark:block" />
               <div>
-                <div className="font-heading text-2xl font-semibold tracking-[-0.05em] text-zinc-900 dark:text-white">
+                <div className="font-heading text-2xl font-semibold tracking-[-0.05em] text-slate-900 dark:text-white">
                   EngIntel
                 </div>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-500">
                   Engineering wire
                 </div>
               </div>
             </div>
-            <div className="inline-flex items-center rounded-full border border-border bg-panel px-3 py-1 text-sm text-zinc-600 dark:border-white/10 dark:text-slate-300">
+            <div className="inline-flex items-center rounded-full border border-border bg-panel px-3 py-1 text-sm text-slate-600 dark:border-white/10 dark:text-slate-300">
               Tech news • AI signals • fast context
             </div>
             <div className="space-y-3">
-              <h1 className="font-heading text-2xl font-semibold leading-[1.15] tracking-[-0.05em] text-zinc-900 dark:text-white sm:text-3xl">
+              <h1 className="font-heading text-2xl font-semibold leading-[1.15] tracking-[-0.05em] text-slate-900 dark:text-white sm:text-3xl">
                 See the stories shaping engineering before the noise catches up.
               </h1>
-              <p className="max-w-md text-sm leading-6 text-zinc-700 dark:text-slate-300">
+              <p className="max-w-md text-sm leading-6 text-slate-700 dark:text-slate-300">
                 Follow the signal across product launches, security incidents, infrastructure shifts, and developer tools.
               </p>
             </div>
@@ -157,12 +157,12 @@ export function LoginRoute() {
           <div className="border border-border bg-panel p-5 shadow-panel dark:border-white/10">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.24em] text-zinc-500 dark:text-slate-500">Access portal</p>
-                <h2 className="font-heading text-xl font-semibold text-zinc-900 dark:text-white">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-500">Access portal</p>
+                <h2 className="font-heading text-xl font-semibold text-slate-900 dark:text-white">
                   {mode === "signup" ? "Create account" : "Sign in"}
                 </h2>
               </div>
-              <div className="rounded-full border border-border bg-background/40 px-3 py-1 text-sm text-zinc-600 dark:border-white/10 dark:text-slate-400">
+              <div className="rounded-full border border-border bg-background/40 px-3 py-1 text-sm text-slate-600 dark:border-white/10 dark:text-slate-400">
                 {mode === "signup" ? "New here" : "Returning"}
               </div>
             </div>
@@ -170,12 +170,12 @@ export function LoginRoute() {
             <form className="space-y-3" onSubmit={handleSubmit}>
               {mode === "signup" ? (
                 <div>
-                  <label className="mb-2 block text-sm text-zinc-600 dark:text-slate-400" htmlFor="displayName">
+                  <label className="mb-2 block text-sm text-slate-600 dark:text-slate-400" htmlFor="displayName">
                     Display name
                   </label>
                   <input
                     id="displayName"
-                    className="w-full border border-border bg-background/40 px-4 py-2.5 text-sm text-zinc-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
+                    className="w-full border border-border bg-background/40 px-4 py-2.5 text-sm text-slate-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
                     placeholder="Alex Chen"
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
@@ -184,13 +184,13 @@ export function LoginRoute() {
               ) : null}
 
               <div>
-                <label className="mb-2 block text-sm text-zinc-600 dark:text-slate-400" htmlFor="email">
+                <label className="mb-2 block text-sm text-slate-600 dark:text-slate-400" htmlFor="email">
                   Email
                 </label>
                 <input
                   id="email"
                   type="email"
-                  className="w-full border border-border bg-background/40 px-4 py-2.5 text-sm text-zinc-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
+                  className="w-full border border-border bg-background/40 px-4 py-2.5 text-sm text-slate-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -199,13 +199,13 @@ export function LoginRoute() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-zinc-600 dark:text-slate-400" htmlFor="password">
+                <label className="mb-2 block text-sm text-slate-600 dark:text-slate-400" htmlFor="password">
                   Password
                 </label>
                 <input
                   id="password"
                   type="password"
-                  className="w-full border border-border bg-background/40 px-4 py-2.5 text-sm text-zinc-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
+                  className="w-full border border-border bg-background/40 px-4 py-2.5 text-sm text-slate-900 outline-none ring-0 focus:border-accent/50 dark:border-white/10 dark:text-slate-100"
                   placeholder="••••••••"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -224,7 +224,7 @@ export function LoginRoute() {
               </button>
             </form>
 
-            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-zinc-400 dark:text-slate-600">
+            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-600">
               <div className="h-px flex-1 bg-border dark:bg-white/10" />
               or
               <div className="h-px flex-1 bg-border dark:bg-white/10" />
@@ -232,7 +232,7 @@ export function LoginRoute() {
 
             <GoogleSignInButton onCredential={(credential) => void handleGoogleCredential(credential)} />
 
-            <div className="mt-5 flex items-center justify-between text-sm text-zinc-600 dark:text-slate-400">
+            <div className="mt-5 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
               <span>{mode === "signup" ? "Already have an account?" : "Need an account?"}</span>
               <button
                 type="button"

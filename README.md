@@ -1,16 +1,18 @@
 # Engineering Intelligence Portal
 
+![EngIntel — Engineering Wire](docs/assets/logo-banner.png)
+
 A news feed for people who write software, not a general-purpose news site with a "tech" tag. It watches RSS feeds, GitHub, Reddit, Hacker News, arXiv, and Hugging Face, scores everything for how much it actually matters to an engineer, and gets out of the way otherwise.
 
 ## Screenshots
 
-| Top stories | Article detail |
+| Home feed | Card grid |
 | --- | --- |
-| ![Top stories feed with impact-scored cards and real source imagery](docs/screenshots/home-feed.png) | ![Article detail with real source imagery, impact score, and affected roles](docs/screenshots/article-detail.png) |
+| ![Home feed with critical alerts strip and front-page lead story](docs/screenshots/home-feed.png) | ![Card grid of impact-scored stories with real source imagery](docs/screenshots/news-grid.png) |
 
-| Full summary, impact score & original source link |
-| --- |
-| ![Article summary sections, impact score panel, and link to the original article](docs/screenshots/article-summary.png) |
+| Article detail | Papers |
+| --- | --- |
+| ![Article detail with AI summary, key points, and original source link](docs/screenshots/article-detail.png) | ![Papers view listing recent arXiv and Hugging Face research](docs/screenshots/papers.png) |
 
 ## Why it's built this way
 

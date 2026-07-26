@@ -8,8 +8,8 @@ import { DateLine } from "@/components/news/article-primitives";
 
 export function CriticalAlertStrip({ items }: { items: Article[] }) {
   return (
-    <section className="border-y border-critical/30 bg-white py-4 dark:bg-panel">
-      <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-critical">Critical Alerts</div>
+    <section className="border-y border-border py-4 dark:border-white/10">
+      <div className="mb-3 font-heading text-sm font-semibold text-accent">Critical Alerts</div>
       <div className="grid gap-3 md:grid-cols-2">
         {items.map((item, index) => (
           <motion.article
@@ -17,19 +17,19 @@ export function CriticalAlertStrip({ items }: { items: Article[] }) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.04 }}
-            className="border-l-2 border-critical bg-critical/5 transition-colors hover:bg-critical/10"
+            className="border border-border bg-panel shadow-[var(--card-shadow)] transition-all duration-200 hover:translate-y-[var(--card-lift)] hover:border-accent/30 hover:shadow-[var(--card-shadow-hover)] dark:border-white/10"
           >
             <Link to={`/app/article/${item.slug}`} className="block p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <ImpactBadge score={item.impact_score} urgency={item.urgency} />
-                <div className="text-xs uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-500">
+                <div className="font-heading text-xs text-muted-2 dark:text-slate-500">
                   {item.source.name} · <DateLine timestamp={item.published_at} />
                 </div>
               </div>
-              <h2 className="font-heading text-lg font-semibold leading-tight text-zinc-900 dark:text-white">
+              <h2 className="font-heading text-lg font-bold leading-tight text-heading dark:text-white">
                 {item.title}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-700 dark:text-slate-300">
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {item.summary?.why_it_matters ?? item.excerpt ?? "High-impact engineering event requiring attention."}
               </p>
             </Link>

@@ -77,10 +77,10 @@ export function SiteFooter() {
       <div className="mx-auto max-w-[1600px] px-4 py-10 lg:px-8">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
-            <div className="font-heading text-xl font-semibold tracking-[-0.05em] text-zinc-900 dark:text-white">
+            <div className="font-heading text-xl font-semibold tracking-[-0.05em] text-slate-900 dark:text-white">
               EngIntel
             </div>
-            <p className="mt-2 max-w-xs text-sm leading-6 text-zinc-600 dark:text-slate-400">
+            <p className="mt-2 max-w-xs text-sm leading-6 text-slate-600 dark:text-slate-400">
               High-signal engineering coverage — AI, security, cloud, and the tooling shifts that shape how teams
               ship.
             </p>
@@ -100,13 +100,13 @@ export function SiteFooter() {
           </div>
           {FOOTER_LINK_GROUPS.map((group) => (
             <div key={group.heading}>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-slate-500">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-500">
                 {group.heading}
               </div>
               <ul className="mt-3 space-y-2">
                 {group.links.map((link) => (
                   <li key={link.to}>
-                    <Link to={link.to} className="text-sm text-zinc-700 hover:text-accent dark:text-slate-300">
+                    <Link to={link.to} className="text-sm text-slate-700 hover:text-accent dark:text-slate-300">
                       {link.label}
                     </Link>
                   </li>
@@ -115,12 +115,12 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-        <div className="mt-10 flex flex-col gap-3 border-t border-border pt-6 text-xs text-zinc-500 dark:border-white/10 dark:text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-border pt-6 text-xs text-slate-500 dark:border-white/10 dark:text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <span>© {new Date().getFullYear()} EngIntel. Engineering wire, aggregated.</span>
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="text-left font-medium text-zinc-600 hover:text-accent dark:text-slate-400"
+            className="text-left font-medium text-slate-600 hover:text-accent dark:text-slate-400"
           >
             Back to top ↑
           </button>

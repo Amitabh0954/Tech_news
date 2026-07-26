@@ -26,7 +26,7 @@ export function ShareButton({ title, url }: { title: string; url: string }) {
         event.stopPropagation();
         void handleShare();
       }}
-      className="rounded-full border border-border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-500 transition-colors hover:border-accent/40 hover:text-accent dark:border-white/10 dark:text-slate-400"
+      className="rounded-full border border-border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-slate-500 transition-colors hover:border-accent/40 hover:text-accent dark:border-white/10 dark:text-slate-400"
     >
       {copied ? "Link copied" : "Share"}
     </button>

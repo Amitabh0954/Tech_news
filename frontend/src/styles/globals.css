@@ -6,19 +6,34 @@
 
 :root {
   color-scheme: light;
-  /* Cool, crisp neutrals (instead of the old warm beige) so the light theme reads as
-     the same designed system as dark mode, not a fallback. Accent is the same
-     green-teal family as dark mode's brand color, just deepened for contrast on
-     white; critical/high/low keep a clearly distinct hue each so the urgency
-     scale still reads at a glance. */
-  --background: 250 250 251;
+  /* Soft neutral surface + refined emerald accent, tuned to read as a premium SaaS
+     dashboard (Linear/Vercel/Stripe/Notion) rather than a flat white fallback.
+     Card/nav tokens are theme-scoped so dark mode (already premium) renders
+     pixel-identical to before — only :root's values below actually change. */
+  --background: 248 250 252;
   --panel: 255 255 255;
-  --border: 226 232 240;
+  --border: 229 231 235;
   --muted: 100 116 139;
-  --accent: 5 150 105;
+  --muted-2: 148 163 184;
+  --heading: 15 23 42;
+  --accent: 15 157 120;
+  --accent-hover: 11 138 103;
+  --success: 22 163 74;
   --critical: 220 38 38;
-  --high: 217 119 6;
+  --high: 202 138 4;
   --low: 8 145 178;
+
+  /* Sharp rectangles throughout, per direct feedback — cards stay square-cornered
+     in both themes; only shadow/border/hover-lift carry the "premium" treatment. */
+  --card-radius: 0px;
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 30px -14px rgba(15, 23, 42, 0.16);
+  --card-shadow-hover: 0 4px 10px rgba(15, 23, 42, 0.06), 0 24px 48px -16px rgba(15, 23, 42, 0.22);
+  --card-lift: -4px;
+  /* Translucent (not opaque) gradient stops so backdrop-blur on the header still has
+     something to blur through — opaque stops here would paint over the blur and the
+     header would read as flat color instead of frosted glass. */
+  --nav-surface: linear-gradient(90deg, rgba(238, 248, 243, 0.75), rgba(248, 250, 252, 0.65), rgba(238, 248, 243, 0.75));
+  --search-glow: 0 0 0 4px rgba(15, 157, 120, 0.12), 0 4px 14px -4px rgba(15, 23, 42, 0.12);
 }
 
 .dark {
@@ -27,10 +42,21 @@
   --panel: 16 20 25;
   --border: 31 40 49;
   --muted: 141 155 170;
+  --muted-2: 100 116 139;
+  --heading: 255 255 255;
   --accent: 45 212 158;
+  --accent-hover: 45 212 158;
+  --success: 45 212 158;
   --critical: 255 90 95;
   --high: 255 159 67;
   --low: 78 205 196;
+
+  --card-radius: 0px;
+  --card-shadow: none;
+  --card-shadow-hover: none;
+  --card-lift: 0px;
+  --nav-surface: transparent;
+  --search-glow: 0 0 0 3px rgba(45, 212, 158, 0.18);
 }
 
 body {
@@ -46,6 +72,21 @@ body {
 
 .dark body {
   color: rgb(226 232 240);
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: fade-in-up 220ms ease-out;
 }
 
 * {

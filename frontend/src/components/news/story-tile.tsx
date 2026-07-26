@@ -25,12 +25,12 @@ export function StoryTile({
       <CardMenu articleId={article.id} className="absolute right-2 top-2 z-10" />
       <EditorialPhoto article={article} aspect={imageAspect} />
       <div className="mt-3 space-y-2">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-slate-500">
+        <div className="font-heading text-xs font-semibold text-slate-500 dark:text-slate-500">
           {article.category?.name ?? "Engineering"}
         </div>
         <h3
           className={cn(
-            "font-heading font-semibold leading-[1.25] tracking-[-0.03em] text-zinc-900 group-hover:text-accent dark:text-white",
+            "font-heading font-bold leading-[1.25] tracking-[-0.03em] text-heading transition-colors duration-200 group-hover:text-accent dark:text-white",
             imageAspect === "square" ? "text-xl" : "text-lg",
           )}
         >
@@ -38,7 +38,7 @@ export function StoryTile({
         </h3>
         <div className="flex flex-wrap items-center gap-2">
           <ImpactBadge score={article.impact_score} urgency={article.urgency} />
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-zinc-500 dark:text-slate-500">
+          <span className="font-heading text-xs text-slate-500 dark:text-slate-500">
             {article.source.name} · <DateLine timestamp={article.published_at} />
           </span>
         </div>
